@@ -84,7 +84,7 @@ from .base import perf_registry
 def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
     cntr=perf_registry.get_counter(name,throw=False)
     if not cntr and auto_add_counter:
-        perf_registry.add_counter(auto_add_counter(name))
+        perf_registry.add_counter(auto_add_counter(name),throw=False)
         cntr=perf_registry.get_counter(name)
     if cntr:
         cntr.report_value(value)
