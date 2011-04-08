@@ -1,16 +1,5 @@
 """
 
-  - cascading reports:
-     - global
-     - per request
-     - types of analyzer needs to be different
-
-
-  - cascading events:
-    - name
-    - value (#)
-
-
 
  - Counter
     - Average
@@ -30,15 +19,6 @@
        - returns a timer which fires events to this object
        - timers have name + start + stop
        - events fired are the  difference between start + stop
-    - GetSimpleTrigger()
-       - returns a counter, firing evens based on name. Value is always one.
-
-    - GetChildProfiler (?)
-
-
- - EventTrigger
-    - reportsEvent(value) - reports events to the associated  Counter (global or thread specific.
-    - is attached to a profiler
 
 
  - Counter chaining (later):
@@ -48,6 +28,9 @@
         - by thread to global
             - resolving bla.foo, will first get a local counter, then a global one
             - any of them will connect
+
+
+
 
 how to use:
 - define output by defining Counter
@@ -68,7 +51,7 @@ output per request (global)
 - unregister_thread(counter=Counter,name=Name)
 _ clean_thread_registery()
 
-@time_function("name") # creates a timer event attached to profiler named name
+@perf_time("name") # creates a timer event attached to profiler named name
 function(bla)
 
 
@@ -77,9 +60,28 @@ function(bla)
 """
 from functools import wraps
 from time import time
-from PerfCounters.counters import EventCounter, AverageWindowCounter
+from PerfCounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
 from .base import perf_registry
 
+
+def _make_reporting_decorator(name,auto_add_counter=None):
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args,**kwargs):
+            cntr=perf_registry.get_counter(name,throw=False)
+            if not cntr and auto_add_counter:
+                perf_registry.add_counter(auto_add_counter(name))
+                cntr=perf_registry.get_counter(name)
+            st= None
+            if cntr:
+                st = cntr.report_event_start()
+            r=f(*args,**kwargs)
+            if cntr:
+                cntr.report_event_end(st)
+            return r
+
+        return wrapper
+    return decorator
 
 def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
     cntr=perf_registry.get_counter(name,throw=False)
@@ -90,35 +92,16 @@ def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
         cntr.report_value(value)
 
 
+
 def perf_count(name,auto_add_counter=EventCounter):
+    return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args,**kwargs):
-            perf_report_value(name,1L,auto_add_counter=auto_add_counter)
-            return f(*args,**kwargs)
+def perf_frequency(name,auto_add_counter=FrequencyCounter):
+    return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
-        return wrapper
-    return decorator
 
-def perf_time(name,auto_add_counter=AverageWindowCounter):
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args,**kwargs):
-            cntr=perf_registry.get_counter(name,throw=False)
-            if not cntr and auto_add_counter:
-                perf_registry.add_counter(auto_add_counter(name))
-                cntr=perf_registry.get_counter(name)
-            st= None
-            if cntr:
-                st = time()
-            r=f(*args,**kwargs)
-            if cntr:
-                cntr.report_value(time()-st)
-            return r
-
-        return wrapper
-    return decorator
+def perf_time(name,auto_add_counter=AverageTimeCounter):
+    return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
 def perf_register(counter):

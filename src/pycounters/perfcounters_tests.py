@@ -1,6 +1,6 @@
-from PerfCounters import perf_register, perf_count, perf_unregister, perf_time
+from PerfCounters import perf_register, perf_count, perf_unregister, perf_time, perf_frequency
 from PerfCounters.base import CounterRegistry
-from PerfCounters.counters import EventCounter, AverageWindowCounter
+from PerfCounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
 from PerfCounters.reporters import BaseReporter
 import time
 
@@ -12,16 +12,38 @@ import unittest
 class MyTestCase(unittest.TestCase):
 
     def test_perf_time(self):
-        c = AverageWindowCounter("c")
+        c = AverageTimeCounter("c")
         perf_register(c)
+        try:
+            @perf_time("c")
+            def f():
+                time.sleep(0.5)
 
-        @perf_time("c")
-        def f():
-            time.sleep(0.5)
+            f()
 
-        f()
+            self.assertAlmostEqual(c.get_value(),0.5,places=3)
+        finally:
+            perf_unregister(counter=c)
 
-        self.assertAlmostEqual(c.get_value(),0.5,places=3)
+    def test_perf_frequency(self):
+        c = FrequencyCounter("c")
+        perf_register(c)
+        try:
+            @perf_frequency("c")
+            def f():
+                time.sleep(0.5)
+
+            @perf_frequency("c")
+            def g():
+                pass
+
+            g()
+            f()
+
+            self.assertAlmostEqual(c.get_value(),3.98,places=1)
+        finally:
+            perf_unregister(counter=c)
+        
 
 
     def test_average_window_counter(self):

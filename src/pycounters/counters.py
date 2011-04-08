@@ -32,14 +32,8 @@ class BaseCounter(TypedObject):
     def clear(self,dump=True):
         with self.lock:
             if dump and self.output_log:
-                output_log.info("Counter '%': %s",self.name,self.get_value())
+                self.output_log.info("Counter '%': %s",self.name,self.get_value())
             self._clear()
-
-
-    def get_event_trigger(self):
-        return EventTrigger(counter=self)
-
-
 
     def _report_event(self,value):
         """ implement this in sub classes """
@@ -54,10 +48,41 @@ class BaseCounter(TypedObject):
         raise NotImplementedError("_clear is not implemented")
 
 
-class EventCounter(BaseCounter):
+class StartEndMixinBase(TypedObject):
+
+    def report_event_start(self):
+        pass
+
+    def report_event_end(self,event_start_return):
+        pass
+
+
+
+class TriggerMixin(StartEndMixinBase):
+
+    def report_event_start(self):
+        pass
+
+    def report_event_end(self,event_start_return):
+        self.report_value(1L)
+
+class TimerMixin(StartEndMixinBase):
+
+    def report_event_start(self):
+        return time()
+
+    def report_event_end(self,event_start_return):
+        self.report_value(time()-event_start_return)
+
+
+
+
+class EventCounter(TriggerMixin,BaseCounter):
 
     value = long
-    
+
+
+
     def _get_value(self):
         return self.value;
 
@@ -107,6 +132,16 @@ class AverageWindowCounter(BaseCounter):
         self.values.append(value)
         self.times.append(time())
 
+class FrequencyCounter(TriggerMixin,AverageWindowCounter):
+
+    def _get_value(self):
+        self._trim_window()
+        if not self.values or len(self.values)<2:
+            return 0.0
+        return sum(self.values, 0.0) / (time()-self.times[0])
 
 
 
+class AverageTimeCounter(TimerMixin,AverageWindowCounter):
+    
+    pass
