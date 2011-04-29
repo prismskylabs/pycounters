@@ -60,7 +60,7 @@ function(bla)
 """
 from functools import wraps
 from time import time
-from PerfCounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
+from .counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
 from .base import perf_registry
 
 

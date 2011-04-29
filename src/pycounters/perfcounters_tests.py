@@ -1,7 +1,7 @@
-from PerfCounters import perf_register, perf_count, perf_unregister, perf_time, perf_frequency
-from PerfCounters.base import CounterRegistry
-from PerfCounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
-from PerfCounters.reporters import BaseReporter
+from pycounters import perf_register, perf_count, perf_unregister, perf_time, perf_frequency
+from pycounters.base import CounterRegistry
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
+from pycounters.reporters import BaseReporter
 import time
 
 __author__ = 'boaz'

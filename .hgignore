@@ -19,3 +19,4 @@ testing/*.egg-info
 .project
 .pydevproject
 .pydevproject.bak
+.idea
