@@ -1,6 +1,5 @@
 from threading import RLock
-from BCThreading import ThreadSpecificProxy
-from TypeInfo import TypedObject, MemberTypeInfo
+from typeinfo import TypedObject, MemberTypeInfo
 
 
 
@@ -66,4 +65,4 @@ class CounterRegistry(TypedObject):
 
 GLOBAL_REGISTRY = CounterRegistry()
 
-perf_registry = ThreadSpecificProxy(defaultTarget=GLOBAL_REGISTRY)
+perf_registry = GLOBAL_REGISTRY

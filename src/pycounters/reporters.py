@@ -1,5 +1,5 @@
 import threading
-from TypeInfo import TypedObject
+from typeinfo import TypedObject
 from .base import perf_registry
 import time
 __author__ = 'boaz'

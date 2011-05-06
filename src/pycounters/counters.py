@@ -1,7 +1,7 @@
 from collections import deque
 from threading import RLock
 from time import time
-from TypeInfo import MemberTypeInfo, TypedObject
+from typeinfo import MemberTypeInfo, TypedObject
 
 __author__ = 'boaz'
 
