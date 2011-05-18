@@ -53,42 +53,129 @@ _ clean_thread_registery()
 function(bla)
 
 
+---- Yet again, writing use cases
 
+    - Using default
+
+    - Count how many times a function is called since last output
+            @perf_count(name)
+            def func()
+               pass
+
+            fires off an event + 1 as value
+            Counter - EventCounter
+            Events - name , value =1
+
+
+    - Count how what the average value of something in last 5 minutes
+            perf_average_value(name,value)
+
+            Counter - AverageCounter
+            Event - name + value
+
+
+    - Measure the frequency a function is executed
+            @perf_frequency(name)
+            def f():
+                pass
+
+            Counter - FrequencyCounter
+            Event - name + 1
+
+    - Measure the average time a function executes
+            @perf_time(name)
+            def f():
+                pass
+
+            Counter - AverageTimeCounter
+            Event - name:start
+                    name:end
+
+
+    - Django:
+        - per view:
+            know the total time
+            out of which how much was spent on:
+                template rendering
+                DB access
+                Allow for interwind access (while rendering to DB access or what ever
+            what ever else is interesting
+
+            @perf_time("bla")
+            @perf_thread_timer
+            def view()
+                some db access
+                g()
+                render template
+
+
+
+            Counters:
+                AverageCounters per view per category
+
+Events:
+    - Name, property (start,end, value) , param
+
+Dispatcher
+    - Global
+        - dispatches events based on name to registered counters
+        - Counters can register under "*" to get all events.
+
+    - Thread specific
+        - Same thing as global but thread specific.
+
+    - Counters can be registered and unregistered.
+
+
+Counters
+    - Time based counters
+        - capture start events and park the time on a thread local store
+        - capture end events calc time and rethrow value events.
+
+    - TimeAccumulator
+        - A special counter that graps start/end events and time the in a mutual exclusive way
+        - the start of one event is the end of the previous one. The end of the current one means restarting
+            the time running before it.
+
+        - Contains a method to fire value events with the total values so far
+
+
+    - EventLoggingCounter
+
+
+Reporters
+    - Report reports from dispatchers.
+    - May be thread specific
 
 """
 from functools import wraps
-from time import time
 from .counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
-from .base import perf_registry
+from .base import THREAD_DISPATCHER, GLOBAL_REGISTRY
 
 
 def _make_reporting_decorator(name,auto_add_counter=None):
     def decorator(f):
         @wraps(f)
         def wrapper(*args,**kwargs):
-            cntr=perf_registry.get_counter(name,throw=False)
+            cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
             if not cntr and auto_add_counter:
                 perf_registry.add_counter(auto_add_counter(name))
                 cntr=perf_registry.get_counter(name)
-            st= None
-            if cntr:
-                st = cntr.report_event_start()
+
+            THREAD_DISPATCHER.disptach_event(name,"start",None)
             r=f(*args,**kwargs)
-            if cntr:
-                cntr.report_event_end(st)
+            THREAD_DISPATCHER.disptach_event(name,"end",None)
             return r
 
         return wrapper
     return decorator
 
 def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
-    cntr=perf_registry.get_counter(name,throw=False)
+    cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
     if not cntr and auto_add_counter:
-        perf_registry.add_counter(auto_add_counter(name),throw=False)
-        cntr=perf_registry.get_counter(name)
-    if cntr:
-        cntr.report_value(value)
+        GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
 
+    THREAD_DISPATCHER.disptach_event(name,"value",value)
 
 
 def perf_count(name,auto_add_counter=EventCounter):
@@ -103,8 +190,8 @@ def perf_time(name,auto_add_counter=AverageTimeCounter):
 
 
 def perf_register(counter):
-    perf_registry.add_counter(counter)
+    GLOBAL_REGISTRY.add_counter(counter)
 
 
 def perf_unregister(counter=None,name=None):
-    perf_registry.remove_counter(counter=counter,name=name)
+    GLOBAL_REGISTRY.remove_counter(counter=counter,name=name)

@@ -1,6 +1,6 @@
 import threading
 from typeinfo import TypedObject
-from .base import perf_registry
+from .base import GLOBAL_REGISTRY
 import time
 __author__ = 'boaz'
 
@@ -20,7 +20,7 @@ class BaseReporter(TypedObject):
         self._auto_reporting_thread.start()
 
     def report(self):
-        values = perf_registry.get_values()
+        values = GLOBAL_REGISTRY.get_values()
         self.output_report(values)
     
     def output_report(self,values):

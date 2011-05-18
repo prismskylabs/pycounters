@@ -1,5 +1,5 @@
 from collections import deque
-from threading import RLock
+from threading import RLock, local as threading_local
 from time import time
 from typeinfo import MemberTypeInfo, TypedObject
 
@@ -19,11 +19,11 @@ class BaseCounter(TypedObject):
         self.output_log = output_log
         self.name=name
 
-    def report_value(self,value):
-        """ reports a value to this counter """
-        if self.parent: self.parent.report_event(value)
+    def report_event(self,name,property,param):
+        """ reports an event to this counter """
+        if self.parent: self.parent.report_event(name,property,param)
         with self.lock:
-            self._report_event(value)
+            self._report_event(name,property,param)
 
     def get_value(self):
         with self.lock:
@@ -35,7 +35,7 @@ class BaseCounter(TypedObject):
                 self.output_log.info("Counter '%': %s",self.name,self.get_value())
             self._clear()
 
-    def _report_event(self,value):
+    def _report_event(self,name,property,param):
         """ implement this in sub classes """
         raise NotImplementedError("_report_event is not implemented")
 
@@ -48,33 +48,75 @@ class BaseCounter(TypedObject):
         raise NotImplementedError("_clear is not implemented")
 
 
-class StartEndMixinBase(TypedObject):
+class AutoDispatch(object):
+    """ a mixing to wire up events to functions based on the property parameter. Anything without a match will be
+        ignored.
+        function signature is:
+        def _report_event_PROPERTY(name,param)
 
-    def report_event_start(self):
-        pass
-
-    def report_event_end(self,event_start_return):
-        pass
+    """
 
 
+    def __init__(self):
+        dispatch_dict = dict()
+        for k in dir(self):
+            if k.startswith("_report_event_"):
+                # have a a handler, wire it up
+                dispatch_dict[k[len("_report_event_"):]]=getattr(self,k)
 
-class TriggerMixin(StartEndMixinBase):
+        self.dispatch_dict = dispatch_dict
 
-    def report_event_start(self):
-        pass
 
-    def report_event_end(self,event_start_return):
-        self.report_value(1L)
+    def _report_event(self,name,property,param):
+        handler = self.dispatch_dict.get(property)
+        if handler:
+            handler(name,param)
 
-class TimerMixin(StartEndMixinBase):
 
-    def report_event_start(self):
+
+class ThreadTimer(threading_local):
+    """ a thread specific timer. """
+
+    def _get_current_time(self):
         return time()
 
-    def report_event_end(self,event_start_return):
-        self.report_value(time()-event_start_return)
+    def start(self):
+        """ start timing """
+        self.start_time = self._get_current_time()
+        self.accumulated_time = 0.0
+
+    def stop(self):
+        """ stops the timer returning accumulated time so far. Also clears out the accumaulated time. """
+        t = self.pause()
+        self.accumulated_time = 0.0
+        return t
+
+    def pause(self):
+        """ pauses the time returning accumulated time so far """
+        ct = self._get_current_time()
+        delta = ct-self.start_time
+        self.accumulated_time += delta
+
+        return self.accumulated_time
 
 
+class TimerMixin(AutoDispatch,TypedObject):
+
+    timer = ThreadTimer
+
+    def _report_event_start(self,name,param):
+        self.timer.start()
+
+    def _report_event_end(self,name,param):
+        self._report_event(name,"value",self.timer.stop())
+
+
+
+
+class TriggerMixin(AutoDispatch):
+
+    def report_event_end(self,name,param):
+        self._report_value(mame,"value",1L)
 
 
 class EventCounter(TriggerMixin,BaseCounter):
@@ -86,7 +128,7 @@ class EventCounter(TriggerMixin,BaseCounter):
     def _get_value(self):
         return self.value;
 
-    def _report_event(self,value):
+    def _report_event_value(self,name,value):
 
         if self.value:
             self.value += value
@@ -98,7 +140,7 @@ class EventCounter(TriggerMixin,BaseCounter):
         self.value = 0L
 
 
-class AverageWindowCounter(BaseCounter):
+class AverageWindowCounter(AutoDispatch,BaseCounter):
 
     values = MemberTypeInfo(type=deque,nullable=False)
     times = MemberTypeInfo(type=deque,nullable=False)
@@ -127,7 +169,7 @@ class AverageWindowCounter(BaseCounter):
             self.values.popleft()
 
 
-    def _report_event(self,value):
+    def _report_event_value(self,param,value):
         self._trim_window()
         self.values.append(value)
         self.times.append(time())
