@@ -57,14 +57,18 @@ class AutoDispatch(object):
     """
 
 
-    def __init__(self):
+    def __new__(cls,*args,**kwargs):
+        r = super(AutoDispatch,cls).__new__(cls,*args,**kwargs)
         dispatch_dict = dict()
-        for k in dir(self):
+        for k in dir(r):
             if k.startswith("_report_event_"):
                 # have a a handler, wire it up
-                dispatch_dict[k[len("_report_event_"):]]=getattr(self,k)
+                dispatch_dict[k[len("_report_event_"):]]=getattr(r,k)
 
-        self.dispatch_dict = dispatch_dict
+        r.dispatch_dict = dispatch_dict
+
+        return r
+
 
 
     def _report_event(self,name,property,param):
@@ -105,6 +109,9 @@ class TimerMixin(AutoDispatch,TypedObject):
     timer = ThreadTimer
 
     def _report_event_start(self,name,param):
+        if not self.timer:
+            self.timer = ThreadTimer()
+            
         self.timer.start()
 
     def _report_event_end(self,name,param):
@@ -115,8 +122,8 @@ class TimerMixin(AutoDispatch,TypedObject):
 
 class TriggerMixin(AutoDispatch):
 
-    def report_event_end(self,name,param):
-        self._report_value(mame,"value",1L)
+    def _report_event_end(self,name,param):
+        self._report_event(name,"value",1L)
 
 
 class EventCounter(TriggerMixin,BaseCounter):

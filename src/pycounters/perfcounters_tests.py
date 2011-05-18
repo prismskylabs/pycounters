@@ -48,14 +48,14 @@ class MyTestCase(unittest.TestCase):
 
     def test_average_window_counter(self):
         test = AverageWindowCounter("test",window_size=0.5)
-        test.report_value(1)
-        test.report_value(2)
+        test.report_event("test","value",1)
+        test.report_event("test","value",2)
         self.assertEquals(test.get_value(),1.5)
 
         time.sleep(0.5)
         self.assertEquals(test.get_value(),0.0)
 
-        test.report_value(1)
+        test.report_event("test","value",1)
         self.assertEquals(test.get_value(),1.0)
 
 
@@ -73,17 +73,17 @@ class MyTestCase(unittest.TestCase):
         test1= EventCounter("test1")
         perf_register(test1)
 
-        test1.report_value(2)
+        test1.report_event("test1","value",2)
 
         time.sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 2 })
 
-        test1.report_value(1)
+        test1.report_event("test1","value",1)
         time.sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
         v.stop_auto_report()
-        test1.report_value(1)
+        test1.report_event("test1","value",1)
         time.sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
@@ -96,9 +96,9 @@ class MyTestCase(unittest.TestCase):
         test2=EventCounter("test2")
         reg.add_counter(test2)
 
-        test1.report_value(2)
+        test1.report_event("test1","value",2)
 
-        test2.report_value(3)
+        test2.report_event("test1","value",3)
 
         self.assertEquals(reg.get_values(), { "test1" : 2, "test2" : 3 })
 
@@ -109,26 +109,27 @@ class MyTestCase(unittest.TestCase):
     def test_counted_func(self):
         c = EventCounter("c")
         perf_register(c)
+        try:
 
-        @perf_count("c")
-        def f():
-            pass
+            @perf_count("c")
+            def f():
+                pass
 
-        f()
-        f()
-        f()
+            f()
+            f()
+            f()
 
-        self.assertEqual(c.get_value(),3L)
+            self.assertEqual(c.get_value(),3L)
 
-        c.clear()
+            c.clear()
 
-        self.assertEqual(c.get_value(),0L)
+            self.assertEqual(c.get_value(),0L)
 
-        f()
+            f()
 
-        self.assertEqual(c.get_value(),1L)
-
-        perf_unregister(counter=c)
+            self.assertEqual(c.get_value(),1L)
+        finally:
+            perf_unregister(counter=c)
 
 
     def test_registry_percolation(self):
