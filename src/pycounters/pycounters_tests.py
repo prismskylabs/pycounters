@@ -1,6 +1,6 @@
-from pycounters import perf_register, perf_count, perf_unregister, perf_time, perf_frequency
+from pycounters import register_counter, count, perf_unregister, perf_time, frequency
 from pycounters.base import CounterRegistry
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ThreadTimer
 from pycounters.reporters import BaseReporter
 import time
 
@@ -9,31 +9,54 @@ __author__ = 'boaz'
 import unittest
 
 
+class FakeTimer(ThreadTimer):
+    """ causes time to behave rationaly so it can be tested. """
+
+    def _get_current_time(self):
+        if hasattr(self,"curtime"):
+            self.curtime +=1
+        else:
+            self.curtime = 0
+        return self.curtime
+
 class MyTestCase(unittest.TestCase):
+
+    def test_Thread_Timer(self):
+        f = FakeTimer()
+        f.start()
+        self.assertEqual(f.stop(),1)
+        f.start()
+        self.assertEqual(f.pause(),1)
+        f.start()
+        self.assertEqual(f.stop(),2)
+
 
     def test_perf_time(self):
         c = AverageTimeCounter("c")
-        perf_register(c)
+        c.timer = FakeTimer()
+        register_counter(c)
         try:
             @perf_time("c")
             def f():
-                time.sleep(0.5)
+                c.timer._get_current_time() # advances time -> just like sleep 1
+                pass
 
             f()
+            f()
 
-            self.assertAlmostEqual(c.get_value(),0.5,places=3)
+            self.assertEqual(c.get_value(),2)
         finally:
             perf_unregister(counter=c)
 
     def test_perf_frequency(self):
         c = FrequencyCounter("c")
-        perf_register(c)
+        register_counter(c)
         try:
-            @perf_frequency("c")
+            @frequency("c")
             def f():
                 time.sleep(0.5)
 
-            @perf_frequency("c")
+            @frequency("c")
             def g():
                 pass
 
@@ -71,7 +94,7 @@ class MyTestCase(unittest.TestCase):
         v.start_auto_report(0.05)
 
         test1= EventCounter("test1")
-        perf_register(test1)
+        register_counter(test1)
 
         test1.report_event("test1","value",2)
 
@@ -108,10 +131,10 @@ class MyTestCase(unittest.TestCase):
 
     def test_counted_func(self):
         c = EventCounter("c")
-        perf_register(c)
+        register_counter(c)
         try:
 
-            @perf_count("c")
+            @count("c")
             def f():
                 pass
 

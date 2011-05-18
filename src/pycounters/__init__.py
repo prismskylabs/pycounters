@@ -170,7 +170,7 @@ def _make_reporting_decorator(name,auto_add_counter=None):
         return wrapper
     return decorator
 
-def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
+def report_value(name,value,auto_add_counter=AverageWindowCounter):
     cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
     if not cntr and auto_add_counter:
         GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
@@ -178,10 +178,10 @@ def perf_report_value(name,value,auto_add_counter=AverageWindowCounter):
     THREAD_DISPATCHER.disptach_event(name,"value",value)
 
 
-def perf_count(name,auto_add_counter=EventCounter):
+def count(name,auto_add_counter=EventCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
-def perf_frequency(name,auto_add_counter=FrequencyCounter):
+def frequency(name,auto_add_counter=FrequencyCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
@@ -189,7 +189,7 @@ def perf_time(name,auto_add_counter=AverageTimeCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
-def perf_register(counter):
+def register_counter(counter):
     GLOBAL_REGISTRY.add_counter(counter)
 
 

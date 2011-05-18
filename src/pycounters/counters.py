@@ -87,7 +87,8 @@ class ThreadTimer(threading_local):
     def start(self):
         """ start timing """
         self.start_time = self._get_current_time()
-        self.accumulated_time = 0.0
+        if not hasattr(self,"accumulated_time"):
+            self.accumulated_time = 0.0
 
     def stop(self):
         """ stops the timer returning accumulated time so far. Also clears out the accumaulated time. """
