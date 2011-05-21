@@ -1,9 +1,9 @@
 import typeinfo
 typeinfo.DEBUG_MODE = False
 
-from pycounters import register_counter, count, perf_unregister, perf_time, frequency, report_value
+from pycounters import register_counter, count, perf_unregister, perf_time, frequency, report_value, report_start_end
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ThreadTimer, BaseCounter, ValueAccumulator
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
 from pycounters.reporters import BaseReporter
 import time
 
@@ -14,7 +14,7 @@ import unittest
 
 
 
-class FakeTimer(ThreadTimer):
+class FakeThreadLocalTimer(ThreadLocalTimer):
     """ causes time to behave rationaly so it can be tested. """
 
     def _get_current_time(self):
@@ -23,6 +23,18 @@ class FakeTimer(ThreadTimer):
         else:
             self.curtime = 0
         return self.curtime
+
+class FakeTimer(Timer):
+    """ causes time to behave rationaly so it can be tested. """
+
+    def _get_current_time(self):
+        if hasattr(self,"curtime"):
+            self.curtime +=1
+        else:
+            self.curtime = 0
+        return self.curtime
+
+
 
 class EventTrace(BaseCounter):
 
@@ -37,6 +49,53 @@ class EventTrace(BaseCounter):
 
 
 class MyTestCase(unittest.TestCase):
+
+
+    def test_ThreadTimeCategorizer(self):
+        tc = ThreadTimeCategorizer("tc")
+        tc._timer_class = FakeTimer
+        THREAD_DISPATCHER.add_listener(tc)
+
+        try:
+            @report_start_end("cat1")
+            def cat1():
+                pass
+
+            @report_start_end("cat2")
+            def cat2():
+                pass
+
+            @report_start_end("multicat")
+            def multicat():
+                cat1()
+                cat2()
+
+            @report_start_end("f")
+            def f():
+                multicat()
+                cat1()
+
+            f()
+
+            c = EventTrace("c")
+            THREAD_DISPATCHER.add_listener(c)
+            try:
+                tc.raise_value_events()
+                self.assertEqual(c.get_value(),
+                    [
+                        ("tc.cat1","value",2.0),
+                        ("tc.cat2","value",1.0),
+                        ("tc.multicat","value",1.0),
+                        ("tc.f","value",1.0),
+                    ]
+                )
+            finally:
+                THREAD_DISPATCHER.remove_listener(c)
+
+        finally:
+            THREAD_DISPATCHER.remove_listener(tc)
+        
+
 
     def test_ValueAccumulator(self):
         c = EventTrace("c")
@@ -67,7 +126,7 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_Thread_Timer(self):
-        f = FakeTimer()
+        f = FakeThreadLocalTimer()
         f.start()
         self.assertEqual(f.stop(),1)
         f.start()
@@ -78,7 +137,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_perf_time(self):
         c = AverageTimeCounter("c")
-        c.timer = FakeTimer()
+        c.timer = FakeThreadLocalTimer()
         register_counter(c)
         try:
             @perf_time("c")

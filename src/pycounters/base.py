@@ -60,6 +60,12 @@ class CounterRegistry(TypedObject):
             return c
 
 
+class BaseListener(object):
+
+    def report_event(self,name,property,param):
+        """ reports an event to this listener """
+        raise NotImplementedError("report_event is not implemented")
+
 
 class EventDispatcher(TypedObject):
     registry = NonNullable(CounterRegistry)

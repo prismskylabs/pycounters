@@ -2,13 +2,13 @@ from collections import deque
 from copy import copy
 from threading import RLock, local as threading_local
 from time import time
-from pycounters.base import THREAD_DISPATCHER
+from pycounters.base import THREAD_DISPATCHER, BaseListener
 from typeinfo import MemberTypeInfo, TypedObject, NonNullable
 
 __author__ = 'boaz'
 
 
-class BaseCounter(TypedObject):
+class BaseCounter(TypedObject,BaseListener):
 
     name = MemberTypeInfo(type=basestring,nullable=False,none_on_init=True)
 
@@ -80,7 +80,7 @@ class AutoDispatch(object):
 
 
 
-class ThreadTimer(threading_local):
+class Timer(object):
     """ a thread specific timer. """
 
     def _get_current_time(self):
@@ -106,14 +106,19 @@ class ThreadTimer(threading_local):
 
         return self.accumulated_time
 
+    def get_accumulated_time(self):
+        return self.accumulated_time
+
+class ThreadLocalTimer(threading_local,Timer):
+    pass
 
 class TimerMixin(AutoDispatch,TypedObject):
 
-    timer = ThreadTimer
+    timer = ThreadLocalTimer
 
     def _report_event_start(self,name,param):
         if not self.timer:
-            self.timer = ThreadTimer()
+            self.timer = ThreadLocalTimer()
             
         self.timer.start()
 
@@ -238,3 +243,41 @@ class ValueAccumulator(AutoDispatch,BaseCounter):
 
             if clear:
                 self._clear()
+
+
+
+class ThreadTimeCategorizer(TypedObject,BaseListener):
+    """ A class to divide the time spent by thread across multiple categories. Categories are mutually exclusive. """
+
+    name = basestring
+    category_timers = NonNullable(dict)
+
+    _timer_class = Timer
+
+    def __init__(self,name):
+        super(ThreadTimeCategorizer,self).__init__()
+        self.name = name
+
+    def report_event(self,name,property,param):
+        if property == "start":
+            cat_timer = self.category_timers.get(name)
+            if not cat_timer:
+                cat_timer = self._timer_class()
+                self.category_timers[name]=cat_timer
+
+            cat_timer.start()
+
+        elif property == "end":
+            cat_timer = self.category_timers[name] # if all went well it is there...
+            cat_timer.pause()
+
+
+   
+    def raise_value_events(self,clear=False):
+        """ raises category total time as value events. """
+        for k,v in self.category_timers.iteritems():
+            THREAD_DISPATCHER.disptach_event(self.name + "." + k,"value",v.get_accumulated_time())
+
+        if clear:
+            self.category_timers.clear()
+
