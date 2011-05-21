@@ -157,10 +157,10 @@ def _make_reporting_decorator(name,auto_add_counter=None):
     def decorator(f):
         @wraps(f)
         def wrapper(*args,**kwargs):
-            cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
-            if not cntr and auto_add_counter:
-                perf_registry.add_counter(auto_add_counter(name))
-                cntr=perf_registry.get_counter(name)
+            if auto_add_counter:
+                cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
+                if not cntr:
+                    perf_registry.add_counter(auto_add_counter(name))
 
             THREAD_DISPATCHER.disptach_event(name,"start",None)
             r=f(*args,**kwargs)
@@ -170,10 +170,17 @@ def _make_reporting_decorator(name,auto_add_counter=None):
         return wrapper
     return decorator
 
+def report_start_end(name):
+    """
+     returns a function decorator which raises start and end events
+    """
+    return _make_reporting_decorator(name)
+
 def report_value(name,value,auto_add_counter=AverageWindowCounter):
-    cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
-    if not cntr and auto_add_counter:
-        GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
+    if auto_add_counter:
+        cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
+        if not cntr:
+            GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
 
     THREAD_DISPATCHER.disptach_event(name,"value",value)
 

@@ -1,7 +1,9 @@
 from collections import deque
+from copy import copy
 from threading import RLock, local as threading_local
 from time import time
-from typeinfo import MemberTypeInfo, TypedObject
+from pycounters.base import THREAD_DISPATCHER
+from typeinfo import MemberTypeInfo, TypedObject, NonNullable
 
 __author__ = 'boaz'
 
@@ -10,8 +12,8 @@ class BaseCounter(TypedObject):
 
     name = MemberTypeInfo(type=basestring,nullable=False,none_on_init=True)
 
-    lock = MemberTypeInfo(type=RLock().__class__,nullable=False) # RLock hides the actual class.
-
+    lock = NonNullable(type=RLock().__class__) # RLock hides the actual class.
+    
 
     def __init__(self,name,output_log=None,parent=None):
         self.initMembers()
@@ -195,3 +197,44 @@ class FrequencyCounter(TriggerMixin,AverageWindowCounter):
 class AverageTimeCounter(TimerMixin,AverageWindowCounter):
     
     pass
+
+
+
+class ValueAccumulator(AutoDispatch,BaseCounter):
+    """ Captures all named values it gets and accumulates them. Also allows rethrowing them, prefixed with their name."""
+
+    accumulated_values = NonNullable(dict)
+
+    # forces the object not to accumulate values. Used when the object itself is raising events
+    _ignore_values = MemberTypeInfo(type=bool,default=False)
+
+
+    def _report_event_value(self,name,value):
+        if self._ignore_values: return
+        cur_value = self.accumulated_values.get(name)
+        if cur_value:
+            cur_value += value
+        else:
+            cur_value = value
+        self.accumulated_values[name]=cur_value
+
+
+    def _get_value(self):
+        return copy(self.accumulated_values)
+
+    def _clear(self):
+        self.accumulated_values.clear()
+
+
+    def raise_value_events(self,clear=False):
+        """ raises accumuated values as value events. """
+        with self.lock:
+            self._ignore_values = True
+            try:
+                for k,v in self.accumulated_values.iteritems():
+                    THREAD_DISPATCHER.disptach_event(self.name + "." + k,"value",v)
+            finally:
+                self._ignore_values = True
+
+            if clear:
+                self._clear()

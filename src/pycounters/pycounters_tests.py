@@ -1,12 +1,17 @@
-from pycounters import register_counter, count, perf_unregister, perf_time, frequency
-from pycounters.base import CounterRegistry
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ThreadTimer
+import typeinfo
+typeinfo.DEBUG_MODE = False
+
+from pycounters import register_counter, count, perf_unregister, perf_time, frequency, report_value
+from pycounters.base import CounterRegistry, THREAD_DISPATCHER
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ThreadTimer, BaseCounter, ValueAccumulator
 from pycounters.reporters import BaseReporter
 import time
 
 __author__ = 'boaz'
 
 import unittest
+
+
 
 
 class FakeTimer(ThreadTimer):
@@ -19,7 +24,47 @@ class FakeTimer(ThreadTimer):
             self.curtime = 0
         return self.curtime
 
+class EventTrace(BaseCounter):
+
+    value = typeinfo.NonNullable(list)
+
+    def _report_event(self,name,property,param):
+        self.value.append((name,property,param))
+
+
+    def _get_value(self):
+        return self.value
+
+
 class MyTestCase(unittest.TestCase):
+
+    def test_ValueAccumulator(self):
+        c = EventTrace("c")
+        ac = ValueAccumulator(name="ac")
+        THREAD_DISPATCHER.add_listener(ac)
+        THREAD_DISPATCHER.add_listener(c)
+        try:
+            report_value("s1",1,auto_add_counter=False)
+            report_value("s1",2,auto_add_counter=False)
+            report_value("s2",5,auto_add_counter=False)
+
+            ac.raise_value_events()
+
+
+            self.assertEqual(c.get_value(),
+                [
+                    ("s1","value",1),
+                    ("s1","value",2),
+                    ("s2","value",5),
+                    ("ac.s2","value",5),
+                    ("ac.s1","value",3),
+                ]
+            )
+        finally:
+            THREAD_DISPATCHER.remove_listener(ac)
+            THREAD_DISPATCHER.remove_listener(c)
+
+
 
     def test_Thread_Timer(self):
         f = FakeTimer()
