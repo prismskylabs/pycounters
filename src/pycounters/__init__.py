@@ -163,8 +163,11 @@ def _make_reporting_decorator(name,auto_add_counter=None):
                     perf_registry.add_counter(auto_add_counter(name))
 
             THREAD_DISPATCHER.disptach_event(name,"start",None)
-            r=f(*args,**kwargs)
-            THREAD_DISPATCHER.disptach_event(name,"end",None)
+            try:
+                r=f(*args,**kwargs)
+            finally:
+                ## make sure calls are balanced
+                THREAD_DISPATCHER.disptach_event(name,"end",None)
             return r
 
         return wrapper

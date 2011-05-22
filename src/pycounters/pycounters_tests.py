@@ -52,8 +52,7 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_ThreadTimeCategorizer(self):
-        tc = ThreadTimeCategorizer("tc")
-        tc._timer_class = FakeTimer
+        tc = ThreadTimeCategorizer("tc",["cat1","cat2","f"],timer_class=FakeTimer)
         THREAD_DISPATCHER.add_listener(tc)
 
         try:
@@ -85,8 +84,7 @@ class MyTestCase(unittest.TestCase):
                     [
                         ("tc.cat1","value",2.0),
                         ("tc.cat2","value",1.0),
-                        ("tc.multicat","value",1.0),
-                        ("tc.f","value",1.0),
+                        ("tc.f","value",6.0),
                     ]
                 )
             finally:

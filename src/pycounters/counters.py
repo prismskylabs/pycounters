@@ -251,25 +251,36 @@ class ThreadTimeCategorizer(TypedObject,BaseListener):
 
     name = basestring
     category_timers = NonNullable(dict)
+    timer_stack = NonNullable(list) # a list of strings of paused timers
 
-    _timer_class = Timer
 
-    def __init__(self,name):
+    def __init__(self,name,categories,timer_class=Timer):
         super(ThreadTimeCategorizer,self).__init__()
         self.name = name
+        for cat in categories:
+            self.category_timers[cat]=timer_class()
+
 
     def report_event(self,name,property,param):
         if property == "start":
+            if self.timer_stack:
+                self.timer_stack[-1].pause()
+
             cat_timer = self.category_timers.get(name)
             if not cat_timer:
-                cat_timer = self._timer_class()
-                self.category_timers[name]=cat_timer
+                return
 
             cat_timer.start()
+            self.timer_stack.append(cat_timer)
 
         elif property == "end":
-            cat_timer = self.category_timers[name] # if all went well it is there...
+            cat_timer = self.category_timers.get(name) # if all went well it is there...
+            if not cat_timer:
+                return
             cat_timer.pause()
+            self.timer_stack.pop()
+            if self.timer_stack:
+                self.timer_stack[-1].start() # continute last paused timer
 
 
    
