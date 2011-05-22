@@ -107,6 +107,8 @@ class Timer(object):
         return self.accumulated_time
 
     def get_accumulated_time(self):
+        if not hasattr(self,"accumulated_time"):
+                self.accumulated_time = 0.0
         return self.accumulated_time
 
 class ThreadLocalTimer(threading_local,Timer):
