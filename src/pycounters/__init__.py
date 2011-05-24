@@ -173,6 +173,19 @@ def _make_reporting_decorator(name,auto_add_counter=None):
         return wrapper
     return decorator
 
+
+def report_start(name):
+    """ reports an event's start.
+        NOTE: you *must*  fire off a corresponding event end with report_end
+    """
+    THREAD_DISPATCHER.disptach_event(name,"start",None)
+
+def report_end(name):
+    """ reports an event's end.
+        NOTE: you *must* have fire doff a corresponding event end with report_start
+    """
+    THREAD_DISPATCHER.disptach_event(name,"end",None)
+
 def report_start_end(name):
     """
      returns a function decorator which raises start and end events

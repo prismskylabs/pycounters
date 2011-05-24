@@ -67,6 +67,8 @@ class LogReporter(BaseReporter):
         self.logger.exception(e)
 
     def output_report(self,values):
-        for k,v in values.iteritems():
+        logs = sorted(values.iteritems(),cmp=lambda a,b:a[0]<b[0])
+
+        for k,v in logs:
             self.logger.info("%s %s",k,v)
 
