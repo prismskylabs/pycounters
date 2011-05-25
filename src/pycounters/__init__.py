@@ -160,7 +160,7 @@ def _make_reporting_decorator(name,auto_add_counter=None):
             if auto_add_counter:
                 cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
                 if not cntr:
-                    perf_registry.add_counter(auto_add_counter(name))
+                    GLOBAL_REGISTRY.add_counter(auto_add_counter(name))
 
             THREAD_DISPATCHER.disptach_event(name,"start",None)
             try:
