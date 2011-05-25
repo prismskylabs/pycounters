@@ -192,9 +192,6 @@ def report_start_end(name):
     """
     return _make_reporting_decorator(name)
 
-
-
-
 def report_value(name,value,auto_add_counter=AverageWindowCounter):
     if auto_add_counter:
         cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
@@ -228,8 +225,8 @@ def perf_time(name,auto_add_counter=AverageTimeCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
-def register_counter(counter):
-    GLOBAL_REGISTRY.add_counter(counter)
+def register_counter(counter,throw_if_exists=True):
+    GLOBAL_REGISTRY.add_counter(counter,throw=throw_if_exists)
 
 
 def perf_unregister(counter=None,name=None):
