@@ -192,6 +192,9 @@ def report_start_end(name):
     """
     return _make_reporting_decorator(name)
 
+
+
+
 def report_value(name,value,auto_add_counter=AverageWindowCounter):
     if auto_add_counter:
         cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
@@ -199,6 +202,19 @@ def report_value(name,value,auto_add_counter=AverageWindowCounter):
             GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
 
     THREAD_DISPATCHER.disptach_event(name,"value",value)
+
+
+def report_occurrence(name,auto_add_counter=FrequencyCounter):
+    """
+     reports an occourence of something
+    """
+    if auto_add_counter:
+        cntr=GLOBAL_REGISTRY.get_counter(name,throw=False)
+        if not cntr:
+            GLOBAL_REGISTRY.add_counter(auto_add_counter(name),throw=False)
+
+    THREAD_DISPATCHER.disptach_event(name,"end",None)
+
 
 
 def count(name,auto_add_counter=EventCounter):

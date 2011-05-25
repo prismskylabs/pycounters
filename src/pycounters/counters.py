@@ -179,7 +179,7 @@ class AverageWindowCounter(AutoDispatch,BaseCounter):
         return sum(self.values, 0.0) / len(self.values)
 
     def _trim_window(self):
-        window_limit = time()-self.window_size
+        window_limit = self._get_current_time()-self.window_size
         # trim old data
         while self.times and self.times[0] < window_limit:
             self.times.popleft()
@@ -189,7 +189,12 @@ class AverageWindowCounter(AutoDispatch,BaseCounter):
     def _report_event_value(self,param,value):
         self._trim_window()
         self.values.append(value)
-        self.times.append(time())
+        self.times.append(self._get_current_time())
+
+
+    def _get_current_time(self):
+        return time()
+
 
 class FrequencyCounter(TriggerMixin,AverageWindowCounter):
 
@@ -197,7 +202,7 @@ class FrequencyCounter(TriggerMixin,AverageWindowCounter):
         self._trim_window()
         if not self.values or len(self.values)<2:
             return 0.0
-        return sum(self.values, 0.0) / (time()-self.times[0])
+        return sum(self.values, 0.0) / (self._get_current_time()-self.times[0])
 
 
 

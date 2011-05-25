@@ -151,12 +151,20 @@ class MyTestCase(unittest.TestCase):
             perf_unregister(counter=c)
 
     def test_perf_frequency(self):
-        c = FrequencyCounter("c")
+        class FakeFrequencyCounter(FrequencyCounter):
+
+            i = 0
+
+            def _get_current_time(self):
+                self.i = self.i+1
+                return self.i
+
+        c = FakeFrequencyCounter("c",window_size=10)
         register_counter(c)
         try:
             @frequency("c")
             def f():
-                time.sleep(0.5)
+                pass
 
             @frequency("c")
             def g():
@@ -165,7 +173,7 @@ class MyTestCase(unittest.TestCase):
             g()
             f()
 
-            self.assertAlmostEqual(c.get_value(),3.98,places=1)
+            self.assertEquals(c.get_value(),0.5)
         finally:
             perf_unregister(counter=c)
         
