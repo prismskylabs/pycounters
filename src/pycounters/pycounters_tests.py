@@ -38,7 +38,9 @@ class FakeTimer(Timer):
 
 class EventTrace(BaseCounter):
 
-    value = typeinfo.NonNullable(list)
+    def __init__(self,*args,**kwargs):
+        self.value = []
+        super(EventTrace,self).__init__(*args,**kwargs)
 
     def _report_event(self,name,property,param):
         self.value.append((name,property,param))

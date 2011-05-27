@@ -3,15 +3,13 @@ from threading import RLock, local as thread_local
 from typeinfo import TypedObject, NonNullable
 
 
-class CounterRegistry(TypedObject):
-
-    lock = NonNullable(RLock().__class__) # RLock hides the actual class.
-
-    registry = NonNullable(dict)
+class CounterRegistry(object):
 
     def __init__(self,parent=None):
         super(CounterRegistry,self).__init__()
         self.parent=parent # used to percolate changes from local thread to parent thread
+        self.lock =RLock()
+        self.registry=dict()
 
 
     def get_values(self):
@@ -90,10 +88,11 @@ class RegistryListener(BaseListener):
         if c:
             c.report_event(name,property,param)
 
-class EventDispatcher(TypedObject):
-    listeners = NonNullable(set) # a dictionary of sets of listeners
+class EventDispatcher(object):
 
-    lock = NonNullable(RLock().__class__) # RLock hides the actual class.
+    def __init__(self):
+        self.listeners=set()
+        self.lock=RLock()
 
 
     def dispatch_event(self,name,property,param):
@@ -112,11 +111,9 @@ class EventDispatcher(TypedObject):
 
 
 
-class ThreadSpecificDispatcher(TypedObject,thread_local):
+class ThreadSpecificDispatcher(thread_local):
     """ A dispatcher handle thread specific dispatching. Also percolates to Global event"""
     ## TODO: work in progress. no clean solution yet.
-
-    listeners = NonNullable(set)
 
     def _get_listner_set(self):
         if not hasattr(self,"listeners"):

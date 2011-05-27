@@ -8,18 +8,15 @@ from typeinfo import MemberTypeInfo, TypedObject, NonNullable
 __author__ = 'boaz'
 
 
-class BaseCounter(TypedObject,BaseListener):
+class BaseCounter(BaseListener):
 
-    name = MemberTypeInfo(type=basestring,nullable=False,none_on_init=True)
 
-    lock = NonNullable(type=RLock().__class__) # RLock hides the actual class.
-    
 
     def __init__(self,name,output_log=None,parent=None):
-        self.initMembers()
         self.parent=parent
         self.output_log = output_log
         self.name=name
+        self.lock = RLock()
 
     def report_event(self,name,property,param):
         """ reports an event to this counter """
@@ -59,17 +56,15 @@ class AutoDispatch(object):
     """
 
 
-    def __new__(cls,*args,**kwargs):
-        r = super(AutoDispatch,cls).__new__(cls,*args,**kwargs)
+    def __init__(self,*args,**kwargs):
+        super(AutoDispatch,self).__init__(*args,**kwargs)
         dispatch_dict = dict()
-        for k in dir(r):
+        for k in dir(self):
             if k.startswith("_report_event_"):
                 # have a a handler, wire it up
-                dispatch_dict[k[len("_report_event_"):]]=getattr(r,k)
+                dispatch_dict[k[len("_report_event_"):]]=getattr(self,k)
 
-        r.dispatch_dict = dispatch_dict
-
-        return r
+        self.dispatch_dict = dispatch_dict
 
 
 
@@ -114,9 +109,13 @@ class Timer(object):
 class ThreadLocalTimer(threading_local,Timer):
     pass
 
-class TimerMixin(AutoDispatch,TypedObject):
+class TimerMixin(AutoDispatch):
 
-    timer = ThreadLocalTimer
+
+    def __init__(self,*args,**kwargs):
+        self.timer=None
+        super(TimerMixin,self).__init__(*args,**kwargs)
+
 
     def _report_event_start(self,name,param):
         if not self.timer:
@@ -138,8 +137,9 @@ class TriggerMixin(AutoDispatch):
 
 class EventCounter(TriggerMixin,BaseCounter):
 
-    value = long
-
+    def __init__(self,*args,**kwargs):
+        self.value = 0L
+        super(EventCounter,self).__init__(*args,**kwargs)
 
 
     def _get_value(self):
@@ -159,13 +159,11 @@ class EventCounter(TriggerMixin,BaseCounter):
 
 class AverageWindowCounter(AutoDispatch,BaseCounter):
 
-    values = MemberTypeInfo(type=deque,nullable=False)
-    times = MemberTypeInfo(type=deque,nullable=False)
-    window_size = float
-
     def __init__(self,name,window_size=300.0,output_log=None,parent=None):
         super(AverageWindowCounter,self).__init__(name,output_log=output_log,parent=parent)
         self.window_size=window_size
+        self.values = deque()
+        self.times = deque()
 
 
     def _clear(self):
@@ -215,10 +213,12 @@ class AverageTimeCounter(TimerMixin,AverageWindowCounter):
 class ValueAccumulator(AutoDispatch,BaseCounter):
     """ Captures all named values it gets and accumulates them. Also allows rethrowing them, prefixed with their name."""
 
-    accumulated_values = NonNullable(dict)
+    def __init__(self,*args,**kwargs):
+        self.accumulated_values=dict()
+        # forces the object not to accumulate values. Used when the object itself is raising events
+        self._ignore_values = False
 
-    # forces the object not to accumulate values. Used when the object itself is raising events
-    _ignore_values = MemberTypeInfo(type=bool,default=False)
+        super(ValueAccumulator,self).__init__(*args,**kwargs)
 
 
     def _report_event_value(self,name,value):
@@ -256,14 +256,11 @@ class ValueAccumulator(AutoDispatch,BaseCounter):
 class ThreadTimeCategorizer(TypedObject,BaseListener):
     """ A class to divide the time spent by thread across multiple categories. Categories are mutually exclusive. """
 
-    name = basestring
-    category_timers = NonNullable(dict)
-    timer_stack = NonNullable(list) # a list of strings of paused timers
-
-
     def __init__(self,name,categories,timer_class=Timer):
         super(ThreadTimeCategorizer,self).__init__()
         self.name = name
+        self.category_timers = dict()
+        self.timer_stack = list() # a list of strings of paused timers
         for cat in categories:
             self.category_timers[cat]=timer_class()
 

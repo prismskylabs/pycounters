@@ -5,15 +5,11 @@ import time
 __author__ = 'boaz'
 
 
-class BaseReporter(TypedObject):
+class BaseReporter(object):
 
-    _auto_reporting_cycle = float
-    _auto_reporting_active = threading.Event
-    _auto_reporting_thread = threading.Thread
 
     def __init__(self):
-        super(BaseReporter,self).__init__()
-
+        self._auto_reporting_cycle = None
         self._auto_reporting_active = threading.Event()
         self._auto_reporting_thread = threading.Thread(target=self._auto_reporting_thread_target)
         self._auto_reporting_thread.daemon = True
