@@ -3,7 +3,6 @@ from copy import copy
 from threading import RLock, local as threading_local
 from time import time
 from pycounters.base import THREAD_DISPATCHER, BaseListener
-from typeinfo import MemberTypeInfo, TypedObject, NonNullable
 
 __author__ = 'boaz'
 
@@ -253,7 +252,7 @@ class ValueAccumulator(AutoDispatch,BaseCounter):
 
 
 
-class ThreadTimeCategorizer(TypedObject,BaseListener):
+class ThreadTimeCategorizer(BaseListener):
     """ A class to divide the time spent by thread across multiple categories. Categories are mutually exclusive. """
 
     def __init__(self,name,categories,timer_class=Timer):

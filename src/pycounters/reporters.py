@@ -1,5 +1,4 @@
 import threading
-from typeinfo import TypedObject
 from .base import GLOBAL_REGISTRY
 import time
 __author__ = 'boaz'

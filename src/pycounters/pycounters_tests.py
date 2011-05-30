@@ -1,6 +1,3 @@
-import typeinfo
-typeinfo.DEBUG_MODE = False
-
 from pycounters import register_counter, count, perf_unregister, perf_time, frequency, report_value, report_start_end
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer

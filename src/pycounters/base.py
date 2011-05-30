@@ -1,6 +1,5 @@
 import logging
 from threading import RLock, local as thread_local
-from typeinfo import TypedObject, NonNullable
 
 
 class CounterRegistry(object):
