@@ -83,7 +83,7 @@ class MyTestCase(unittest.TestCase):
                     [
                         ("tc.cat1","value",2.0),
                         ("tc.cat2","value",1.0),
-                        ("tc.f","value",6.0),
+                        ("tc.f","value",4.0),
                     ]
                 )
             finally:

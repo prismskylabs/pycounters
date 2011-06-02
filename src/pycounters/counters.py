@@ -266,12 +266,13 @@ class ThreadTimeCategorizer(BaseListener):
 
     def report_event(self,name,property,param):
         if property == "start":
-            if self.timer_stack:
-                self.timer_stack[-1].pause()
-
             cat_timer = self.category_timers.get(name)
             if not cat_timer:
                 return
+
+            if self.timer_stack:
+                self.timer_stack[-1].pause()
+
 
             cat_timer.start()
             self.timer_stack.append(cat_timer)
