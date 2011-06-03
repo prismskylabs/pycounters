@@ -1,4 +1,4 @@
-from pycounters import register_counter, count, perf_unregister, perf_time, frequency, report_value, report_start_end
+from pycounters import register_counter, count, perf_time, frequency, report_value, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
 from pycounters.reporters import BaseReporter
@@ -147,7 +147,7 @@ class MyTestCase(unittest.TestCase):
 
             self.assertEqual(c.get_value(),2)
         finally:
-            perf_unregister(counter=c)
+            unregister_counter(counter=c)
 
     def test_perf_frequency(self):
         class FakeFrequencyCounter(FrequencyCounter):
@@ -174,7 +174,7 @@ class MyTestCase(unittest.TestCase):
 
             self.assertEquals(c.get_value(),0.5)
         finally:
-            perf_unregister(counter=c)
+            unregister_counter(counter=c)
         
 
 
@@ -261,7 +261,7 @@ class MyTestCase(unittest.TestCase):
 
             self.assertEqual(c.get_value(),1L)
         finally:
-            perf_unregister(counter=c)
+            unregister_counter(counter=c)
 
 
     def test_registry_percolation(self):

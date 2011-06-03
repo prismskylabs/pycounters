@@ -229,5 +229,5 @@ def register_counter(counter,throw_if_exists=True):
     GLOBAL_REGISTRY.add_counter(counter,throw=throw_if_exists)
 
 
-def perf_unregister(counter=None,name=None):
+def unregister_counter(counter=None,name=None):
     GLOBAL_REGISTRY.remove_counter(counter=counter,name=name)
