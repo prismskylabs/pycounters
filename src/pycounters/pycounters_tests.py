@@ -1,4 +1,4 @@
-from pycounters import register_counter, count, perf_time, frequency, report_value, report_start_end, unregister_counter
+from pycounters import register_counter, count, time, frequency, report_value, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
 from pycounters.reporters import BaseReporter
@@ -137,7 +137,7 @@ class MyTestCase(unittest.TestCase):
         c.timer = FakeThreadLocalTimer()
         register_counter(c)
         try:
-            @perf_time("c")
+            @time("c")
             def f():
                 c.timer._get_current_time() # advances time -> just like sleep 1
                 pass

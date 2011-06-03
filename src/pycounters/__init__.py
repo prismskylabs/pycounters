@@ -221,7 +221,7 @@ def frequency(name,auto_add_counter=FrequencyCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
-def perf_time(name,auto_add_counter=AverageTimeCounter):
+def time(name,auto_add_counter=AverageTimeCounter):
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
