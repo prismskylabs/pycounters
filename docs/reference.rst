@@ -4,7 +4,7 @@
 Object and function reference
 ==============================
 
-.. py:currentmodule:: pycounters
+.. py:module:: pycounters
 
 -----------------
 Event reporting
@@ -19,13 +19,40 @@ Event reporting
 .. autofunction:: report_value
 
 
+------------------
+Counters
+------------------
+
+.. py:currentmodule:: pycounters.counters
+
+.. autoclass:: EventCounter
+
+.. autoclass:: AverageWindowCounter
+
+.. autoclass:: AverageTimeCounter
+
+.. autoclass:: FrequencyCounter
+
+------------------
+Counters
+------------------
+
+.. py:currentmodule:: pycounters.reporters
+
+.. autoclass:: LogReporter
+
+
+
 .. _shortcut_functions:
 
 ------------------
 Shortcut functions
 ------------------
 
-TBD
+.. py:currentmodule:: pycounters
+
+.. autofunction:: count
+
 
 
 

@@ -1,8 +1,9 @@
-from pycounters import register_counter, count, time, frequency, report_value, report_start_end, unregister_counter
+
+from time import sleep
+from pycounters import register_counter, count, time, frequency, value, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
 from pycounters.reporters import BaseReporter
-import time
 
 __author__ = 'boaz'
 
@@ -100,9 +101,9 @@ class MyTestCase(unittest.TestCase):
         THREAD_DISPATCHER.add_listener(ac)
         THREAD_DISPATCHER.add_listener(c)
         try:
-            report_value("s1",1,auto_add_counter=False)
-            report_value("s1",2,auto_add_counter=False)
-            report_value("s2",5,auto_add_counter=False)
+            value("s1",1,auto_add_counter=False)
+            value("s1",2,auto_add_counter=False)
+            value("s2",5,auto_add_counter=False)
 
             ac.raise_value_events()
 
@@ -184,7 +185,7 @@ class MyTestCase(unittest.TestCase):
         test.report_event("test","value",2)
         self.assertEquals(test.get_value(),1.5)
 
-        time.sleep(0.5)
+        sleep(0.5)
         self.assertEquals(test.get_value(),0.0)
 
         test.report_event("test","value",1)
@@ -207,16 +208,16 @@ class MyTestCase(unittest.TestCase):
 
         test1.report_event("test1","value",2)
 
-        time.sleep(0.1)
+        sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 2 })
 
         test1.report_event("test1","value",1)
-        time.sleep(0.1)
+        sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
         v.stop_auto_report()
         test1.report_event("test1","value",1)
-        time.sleep(0.1)
+        sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
 
@@ -263,16 +264,6 @@ class MyTestCase(unittest.TestCase):
         finally:
             unregister_counter(counter=c)
 
-
-    def test_registry_percolation(self):
-        rep1 = CounterRegistry()
-
-        rep2 = CounterRegistry(parent=rep1)
-
-        rep1.add_counter(EventCounter("test"))
-
-        c = rep2.get_counter("test",throw=False)
-        self.assertTrue(c)
 
 
 if __name__ == '__main__':

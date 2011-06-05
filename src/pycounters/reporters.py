@@ -53,6 +53,10 @@ class BaseReporter(object):
 
 
 class LogReporter(BaseReporter):
+    """ Log based reporter. Will report on demand (when :meth:report is called) or periodically
+        (use :meth:start_auto_report)
+    """
+
 
     def __init__(self,output_log):
         super(LogReporter,self).__init__()

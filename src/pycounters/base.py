@@ -4,9 +4,8 @@ from threading import RLock, local as thread_local
 
 class CounterRegistry(object):
 
-    def __init__(self,parent=None):
+    def __init__(self):
         super(CounterRegistry,self).__init__()
-        self.parent=parent # used to percolate changes from local thread to parent thread
         self.lock =RLock()
         self.registry=dict()
 
@@ -28,10 +27,6 @@ class CounterRegistry(object):
                 return False
 
             self.registry[counter.name] = counter
-            if self.parent:
-                c = self.parent.get_counter(counter.name)
-                if c:
-                    counter.parent =c
             return True
 
 
@@ -49,8 +44,6 @@ class CounterRegistry(object):
 
         with self.lock:
             c = self.registry.get(name)
-            if not c and self.parent:
-                c = self.parent.get_counter(name,throw=False)
 
             if not c and throw:
                 raise Exception("No counter named '%s' found " % (name,) )

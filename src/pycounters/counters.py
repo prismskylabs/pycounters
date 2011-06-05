@@ -11,15 +11,12 @@ class BaseCounter(BaseListener):
 
 
 
-    def __init__(self,name,output_log=None,parent=None):
-        self.parent=parent
-        self.output_log = output_log
+    def __init__(self,name):
         self.name=name
         self.lock = RLock()
 
     def report_event(self,name,property,param):
         """ reports an event to this counter """
-        if self.parent: self.parent.report_event(name,property,param)
         with self.lock:
             self._report_event(name,property,param)
 
@@ -29,8 +26,6 @@ class BaseCounter(BaseListener):
 
     def clear(self,dump=True):
         with self.lock:
-            if dump and self.output_log:
-                self.output_log.info("Counter '%': %s",self.name,self.get_value())
             self._clear()
 
     def _report_event(self,name,property,param):
@@ -129,16 +124,20 @@ class TimerMixin(AutoDispatch):
 
 
 class TriggerMixin(AutoDispatch):
+    """ translates end events to 1-valued events. Effectively counting them.
+    """
 
     def _report_event_end(self,name,param):
         self._report_event(name,"value",1L)
 
 
 class EventCounter(TriggerMixin,BaseCounter):
+    """ Counting the number of times an end event has fired.
+    """
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self,name):
         self.value = 0L
-        super(EventCounter,self).__init__(*args,**kwargs)
+        super(EventCounter,self).__init__(name)
 
 
     def _get_value(self):
@@ -157,9 +156,10 @@ class EventCounter(TriggerMixin,BaseCounter):
 
 
 class AverageWindowCounter(AutoDispatch,BaseCounter):
+    """ Calculating a running average of arbitrary values """
 
-    def __init__(self,name,window_size=300.0,output_log=None,parent=None):
-        super(AverageWindowCounter,self).__init__(name,output_log=output_log,parent=parent)
+    def __init__(self,name,window_size=300.0):
+        super(AverageWindowCounter,self).__init__(name)
         self.window_size=window_size
         self.values = deque()
         self.times = deque()
@@ -194,6 +194,8 @@ class AverageWindowCounter(AutoDispatch,BaseCounter):
 
 
 class FrequencyCounter(TriggerMixin,AverageWindowCounter):
+    """ Counts the frequency of end events in the last five minutes
+    """
 
     def _get_value(self):
         self._trim_window()
@@ -204,6 +206,8 @@ class FrequencyCounter(TriggerMixin,AverageWindowCounter):
 
 
 class AverageTimeCounter(TimerMixin,AverageWindowCounter):
+    """ Counts the average time between start and end events
+    """
     
     pass
 
