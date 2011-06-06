@@ -204,7 +204,7 @@ class FrequencyCounter(TriggerMixin,AverageWindowCounter):
 
     def _get_value(self):
         self._trim_window()
-        if not self.values or len(self.values)<2:
+        if not self.values or len(self.values)<1:
             return 0.0
         return sum(self.values, 0.0) / (self._get_current_time()-self.times[0])
 

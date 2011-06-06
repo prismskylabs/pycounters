@@ -1,9 +1,10 @@
 
 from time import sleep
-from pycounters import register_counter, count, time, frequency, value, report_start_end, unregister_counter
+from pycounters import register_counter, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
 from pycounters.reporters import BaseReporter
+from pycounters.shortcuts import count, value, frequency, time
 
 __author__ = 'boaz'
 
@@ -197,7 +198,7 @@ class MyTestCase(unittest.TestCase):
     def test_basic_reporter(self):
         class ValueReporter(BaseReporter):
 
-            def output_report(self,values):
+            def _output_report(self,values):
                 self.last_values = values
 
         v = ValueReporter()

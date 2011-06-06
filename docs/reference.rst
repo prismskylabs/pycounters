@@ -69,7 +69,7 @@ Registering counters
 Shortcut functions
 ------------------
 
-.. py:currentmodule:: pycounters
+.. py:currentmodule:: pycounters.shortcuts
 
 .. autofunction:: value
 
