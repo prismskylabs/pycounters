@@ -18,7 +18,7 @@ class BaseReporter(object):
         """ Collects a report from the counters and outputs it
         """
         values = GLOBAL_REGISTRY.get_values()
-        self.output_report(values)
+        self._output_report(values)
     
     def _output_report(self,values):
         raise NotImplementedError("Implement _output_report in a subclass.")
