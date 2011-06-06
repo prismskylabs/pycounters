@@ -1,3 +1,2 @@
-A python based manual instrumentation library, designed to measure performance of a production system. 
+PyCounters is a light weight library to monitor performance and events in production systems.
 
-The python equivalent to Windows' Performance Counters.

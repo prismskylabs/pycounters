@@ -21,10 +21,15 @@ class BaseCounter(BaseListener):
             self._report_event(name,property,param)
 
     def get_value(self):
+        """
+         gets the value of this counter
+        """
         with self.lock:
             return self._get_value()
 
     def clear(self,dump=True):
+        """ Clears the stored information
+        """
         with self.lock:
             self._clear()
 

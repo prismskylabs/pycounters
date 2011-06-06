@@ -36,13 +36,13 @@ def report_start(name):
     """ reports an event's start.
         NOTE: you *must*  fire off a corresponding event end with report_end
     """
-    THREAD_DISPATCHER.disptach_event(name,"start",None)
+    base.THREAD_DISPATCHER.disptach_event(name,"start",None)
 
 def report_end(name):
     """ reports an event's end.
         NOTE: you *must* have fire doff a corresponding event end with report_start
     """
-    THREAD_DISPATCHER.disptach_event(name,"end",None)
+    base.THREAD_DISPATCHER.disptach_event(name,"end",None)
 
 def report_start_end(name):
     """
@@ -55,9 +55,9 @@ def report_value(name,value):
 
     base.THREAD_DISPATCHER.disptach_event(name,"value",value)
 
-def report_occurrence(name,auto_add_counter=counters.FrequencyCounter):
+def occurrence(name,auto_add_counter=counters.FrequencyCounter):
     """
-     reports an occurence of something
+      A shortcut function reports an occurrence of something. Uses the :obj:`counters.FrequencyCounter` counter by default.
     """
     if auto_add_counter:
         cntr= base.GLOBAL_REGISTRY.get_counter(name,throw=False)
@@ -70,19 +70,28 @@ def report_occurrence(name,auto_add_counter=counters.FrequencyCounter):
 
 def count(name,auto_add_counter=counters.EventCounter):
     """
-        A shortcut function to count the number times something happens. Using the :obj:`counters.EventCounter` counter by default.
+        A shortcut decorator to count the number times a function is run. Uses the :obj:`counters.EventCounter` counter by default.
     """
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 def frequency(name,auto_add_counter=counters.FrequencyCounter):
+    """
+        A shortcut decorator to count the frequency in which a function is called. Uses the :obj:`counters.FrequencyCounter` counter by default.
+    """
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
 def time(name,auto_add_counter=counters.AverageTimeCounter):
+    """
+        A shortcut decorator to count the average execution time of a function. Uses the :obj:`counters.AverageTimeCounter` counter by default.
+    """
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
 def value(name,value,auto_add_counter=counters.AverageWindowCounter):
+    """
+      A shortcut function reports an value of something. Uses the :obj:`counters.AverageWindowCounter` counter by default.
+    """
     if auto_add_counter:
         cntr= base.GLOBAL_REGISTRY.get_counter(name,throw=False)
         if not cntr:
@@ -93,8 +102,12 @@ def value(name,value,auto_add_counter=counters.AverageWindowCounter):
 
 
 def register_counter(counter,throw_if_exists=True):
+    """ Register a counter with PyCounters
+    """
     base.GLOBAL_REGISTRY.add_counter(counter,throw=throw_if_exists)
 
 
 def unregister_counter(counter=None,name=None):
+    """ Removes a previously registered counter
+    """
     base.GLOBAL_REGISTRY.remove_counter(counter=counter,name=name)

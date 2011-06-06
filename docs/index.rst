@@ -7,9 +7,7 @@
 PyCounters
 =================
 
-PyCounters is a light weight library to monitor performance in production system.
-It is meant to be used in scenarios where using a profile is unrealistic due to the overhead it requires.
-Use PyCounters to get high level and concise overview of what's going on in your production code.
+PyCounters is a light weight library to monitor performance and events in production systems.
 
 -----------------
 Typical use cases
@@ -101,7 +99,6 @@ Easy install PyCounters to get it up and running: ::
     easy_install pycounters
 
 
-
 ----------------------------------
 Cool, but it would be great if ...
 ----------------------------------
@@ -119,7 +116,7 @@ Of course, you are more then welcome to browse and/or fork the code: https://bit
 
 .. toctree::
    :maxdepth: 3
-
+   
    moving_parts
    reference
 
