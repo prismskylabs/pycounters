@@ -74,6 +74,9 @@ or by name::
 Reporters
 --------------------
 
+
+.. py:currentmodule:: pycounters.reporters
+
 Reportes are the way to collect a report from the currently registered Counters. Reporters are not supposed to run often as that
 will have a performance impact.
 
