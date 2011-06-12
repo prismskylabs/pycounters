@@ -10,7 +10,7 @@ long_description = (
 
 setup(name='pycounters',
       version=version,
-      description='A Python based light weight manual instrumantion livrary',
+      description='PyCounters is a light weight library to monitor performance and events in production systems',
       long_description=long_description,
       classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       keywords='',

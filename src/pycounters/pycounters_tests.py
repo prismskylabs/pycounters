@@ -202,23 +202,23 @@ class MyTestCase(unittest.TestCase):
                 self.last_values = values
 
         v = ValueReporter()
-        v.start_auto_report(0.05)
+        v.start_auto_report(0.01)
 
         test1= EventCounter("test1")
         register_counter(test1)
 
         test1.report_event("test1","value",2)
 
-        sleep(0.1)
+        sleep(0.05)
         self.assertEqual(v.last_values, { "test1" : 2 })
 
         test1.report_event("test1","value",1)
-        sleep(0.1)
+        sleep(0.05)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
         v.stop_auto_report()
         test1.report_event("test1","value",1)
-        sleep(0.1)
+        sleep(0.05)
         self.assertEqual(v.last_values, { "test1" : 3 })
 
 
