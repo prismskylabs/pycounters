@@ -31,11 +31,11 @@ Execution frequency
 ^^^^^^^^^^^^^^^^^^^
 Count the number of times per second a function is executed::
 
-    import pycounters
+    from pycounters.shortcuts import frequency
 
-    @pycounters.perf_frequency("counter_name")
+    @frequency("counter_name")
     def f():
-        """ some iteresting work like serving a request """
+        """ some interesting work like serving a request """
         pass
 
 .. note:: Measurements are done by averaging out a sliding window of 5 minutes. Window size is configurable.
@@ -45,11 +45,11 @@ Average executing time
 ^^^^^^^^^^^^^^^^^^^^^^
 Count the average wall clock time a function runs::
 
-    import pycounters
+    from pycounters.shortcuts import time
 
-    @pycounters.perf_time("counter_name")
+    @time("counter_name")
     def f():
-        """ some iteresting work like serving a request """
+        """ some interesting work like serving a request """
         pass
 
 .. note:: You need to specify the name of the counter to be used. This allows for counting multiple function under a single counter
@@ -60,12 +60,12 @@ Occurrence frequency
 
 Counting some event somewhere in your code::
 
-    import pycounters
+    from pycounters.shortcuts import occurrence
 
     def some_code():
         ...
         if TEST_FOR_SOMETHING:
-            pycounters.report_occurrence("couter_name")
+            occurrence("counter_name")
         ...
 
 ---------------------------------
