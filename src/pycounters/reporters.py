@@ -26,7 +26,7 @@ class BaseReporter(object):
 
     def start_auto_report(self,seconds=300):
         """
-        Start reporting in a background thread. Reporting period is set by seconds param.
+        Start reporting in a background thread. Reporting frequency is set by seconds param.
         """
         self._auto_reporting_cycle = float(seconds)
         self._auto_reporting_active.set()

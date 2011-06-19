@@ -5,14 +5,14 @@ import counters
 
 def count(name,auto_add_counter=counters.EventCounter):
     """
-        A shortcut decorator to count the number times a function is run. Uses the :obj:`counters.EventCounter` counter by default.
+        A shortcut decorator to count the number times a function is called. Uses the :obj:`counters.EventCounter` counter by default.
     """
     return _make_reporting_decorator(name,auto_add_counter=auto_add_counter)
 
 
 def value(name,value,auto_add_counter=counters.AverageWindowCounter):
     """
-      A shortcut function reports an value of something. Uses the :obj:`counters.AverageWindowCounter` counter by default.
+      A shortcut function to report a value of something. Uses the :obj:`counters.AverageWindowCounter` counter by default.
     """
     if auto_add_counter:
         cntr= base.GLOBAL_REGISTRY.get_counter(name,throw=False)

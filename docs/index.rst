@@ -26,9 +26,9 @@ Typical use cases
 Some simple examples
 --------------------
 
-^^^^^^^^^^^^^^^^^^^
-Execution frequency
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Measuring execution frequency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Count the number of times per second a function is executed::
 
     from pycounters.shortcuts import frequency
@@ -40,9 +40,9 @@ Count the number of times per second a function is executed::
 
 .. note:: Measurements are done by averaging out a sliding window of 5 minutes. Window size is configurable.
 
-^^^^^^^^^^^^^^^^^^^^^^
-Average executing time
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Measuring average executing time
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Count the average wall clock time a function runs::
 
     from pycounters.shortcuts import time
@@ -52,10 +52,10 @@ Count the average wall clock time a function runs::
         """ some interesting work like serving a request """
         pass
 
-.. note:: You need to specify the name of the counter to be used. This allows for counting multiple function under a single counter
+.. note:: You need to specify the name of the counter to be used. This allows for counting multiple function using a single counter
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Occurrence frequency
+Measuring custom event frequency
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Counting some event somewhere in your code::
@@ -88,7 +88,7 @@ Here is an exmaple: ::
     2011-06-03 18:12:44,888 | 9130|1286490432 | counters | INFO | search 1.47849245866
 
 .. note:: The above logs indicate that the search function took 1.48 seconds on average to execute. The posting function
-    took only 0.59.
+    took only 0.59 seconds.
 
 -----------------------------------
 Installation
@@ -113,6 +113,12 @@ Here is what I have in mind so far:
  * Cross process aggregation
 
 Of course, you are more then welcome to browse and/or fork the code: https://bitbucket.org/bleskes/pycounters
+
+
+
+---------------
+Further reading
+---------------
 
 .. toctree::
    :maxdepth: 3

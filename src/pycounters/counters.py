@@ -137,7 +137,7 @@ class TriggerMixin(AutoDispatch):
 
 
 class EventCounter(TriggerMixin,BaseCounter):
-    """ Counting the number of times an end event has fired.
+    """ Counts the number of times an end event has fired.
     """
 
     def __init__(self,name):
@@ -161,7 +161,7 @@ class EventCounter(TriggerMixin,BaseCounter):
 
 
 class AverageWindowCounter(AutoDispatch,BaseCounter):
-    """ Calculating a running average of arbitrary values """
+    """ Calculates a running average of arbitrary values """
 
     def __init__(self,name,window_size=300.0):
         super(AverageWindowCounter,self).__init__(name)

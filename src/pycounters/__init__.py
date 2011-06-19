@@ -19,7 +19,7 @@ def report_start(name):
 
 def report_end(name):
     """ reports an event's end.
-        NOTE: you *must* have fire doff a corresponding event end with report_start
+        NOTE: you *must* have fired off a corresponding event end with report_start
     """
     base.THREAD_DISPATCHER.disptach_event(name,"end",None)
 
@@ -31,6 +31,9 @@ def report_start_end(name):
 
 
 def report_value(name,value):
+    """
+     reports a value event to the counters.
+    """
 
     base.THREAD_DISPATCHER.disptach_event(name,"value",value)
 

@@ -71,17 +71,10 @@ Shortcut functions
 
 .. py:currentmodule:: pycounters.shortcuts
 
-.. autofunction:: value
+.. automodule::  pycounters.shortcuts
+    :members:
+    
 
-.. autofunction:: occurrence
-
-.. autofunction:: frequency
-
-.. autofunction:: count
-
-.. autofunction:: time
-
-.. autofunction:: value
 
 
 
