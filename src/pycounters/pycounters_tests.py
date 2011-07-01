@@ -2,7 +2,8 @@
 from time import sleep
 from pycounters import register_counter, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, BaseCounter, ValueAccumulator, ThreadTimeCategorizer, Timer, ThreadLocalTimer
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer
+from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import BaseReporter
 from pycounters.shortcuts import count, value, frequency, time
 
@@ -266,6 +267,41 @@ class MyTestCase(unittest.TestCase):
             unregister_counter(counter=c)
 
 
+    def test_average_counter_value(self):
+        a = AverageCounterValue(1)
+        b = AverageCounterValue(3)
+        a.merge_with(b)
+        self.assertEquals(a.value,2.0)
+
+    def test_accumulative_counter_value(self):
+        a = AccumulativeCounterValue(1)
+        b = AccumulativeCounterValue(3)
+        a.merge_with(b)
+        self.assertEquals(a.value,4)
+
+    def test_min_counter_value(self):
+        a = MinCounterValue(1)
+        b = MinCounterValue(3)
+        a.merge_with(b)
+        self.assertEquals(a.value,1)
+        c = MinCounterValue(0)
+        a.merge_with(c)
+        self.assertEquals(a.value,0)
+        b.value = None
+        a.merge_with(b)
+        self.assertEquals(a.value,0)
+
+    def test_max_counter_value(self):
+        a = MaxCounterValue(3)
+        b = MaxCounterValue(1)
+        a.merge_with(b)
+        self.assertEquals(a.value,3)
+        c = MaxCounterValue(4)
+        a.merge_with(c)
+        self.assertEquals(a.value,4)
+        b.value = None
+        a.merge_with(b)
+        self.assertEquals(a.value,4)
 
 if __name__ == '__main__':
     unittest.main()
