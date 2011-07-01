@@ -1,6 +1,6 @@
 from exceptions import NotImplementedError
 from time import time
-from pycounters.base import BaseListener
+from pycounters.base import BaseListener, CounterValueBase
 from threading import RLock, local as threading_local
 
 class BaseCounter(BaseListener):
@@ -131,22 +131,6 @@ class TriggerMixin(AutoDispatch):
         self._report_event(name,"value",1L)
 
 
-
-class CounterValueBase(object):
-    """ a base class for counter values. Deals with defining merge semantics etc.
-    """
-
-    def __init__(self,value):
-        self.value = value
-
-
-    def merge_with(self,other_counter_value):
-        """ updates this CounterValue with information of another. Used for multiprocess reporting
-        """
-        raise NotImplementedError("merge_with should be implemented in class inheriting from CounterValueBase")
-
-
-
 class AccumulativeCounterValue(CounterValueBase):
     """ Counter values that are added upon merges
     """
@@ -161,11 +145,17 @@ class AverageCounterValue(CounterValueBase):
     """ Counter values that are averaged upon merges
     """
 
+    value = property(lambda self: sum(self._values, 0.0) / len(self._values))
+
+    def __init__(self,value):
+        self._values = [value]
+
+
     def merge_with(self,other_counter_value):
         """ updates this CounterValue with information of another. Used for multiprocess reporting
         """
-        self.value += other_counter_value.value
-        self.value /= 2.0
+        self._values.extend(other_counter_value._values)
+        
 
 
 class MaxCounterValue(CounterValueBase):

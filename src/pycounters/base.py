@@ -1,3 +1,4 @@
+from exceptions import NotImplementedError, Exception
 import logging
 from threading import RLock, local as thread_local
 
@@ -11,7 +12,7 @@ class CounterRegistry(object):
 
 
     def get_values(self):
-        values = dict()
+        values = CounterValueCollection()
         with self.lock:
             for name,c in self.registry.iteritems():
                 values[name]=c.get_value()
@@ -142,3 +143,41 @@ GLOBAL_DISPATCHER = EventDispatcher()
 GLOBAL_DISPATCHER.add_listener(RegistryListener(GLOBAL_REGISTRY))
 
 THREAD_DISPATCHER = ThreadSpecificDispatcher()
+class CounterValueBase(object):
+    """ a base class for counter values. Deals with defining merge semantics etc.
+    """
+
+    def __init__(self,value):
+        self.value = value
+
+
+    def merge_with(self,other_counter_value):
+        """ updates this CounterValue with information of another. Used for multiprocess reporting
+        """
+        raise NotImplementedError("merge_with should be implemented in class inheriting from CounterValueBase")
+
+
+class CounterValueCollection(dict):
+    """ a dictionary of counter values, adding support for dictionary merges and getting a value only dict.
+    """
+
+    @property
+    def values(self):
+        r = {}
+        for k,v in self.iteritems():
+            r[k] = v.value if hasattr(v,"value") else v
+
+        return r
+
+    def merge_with(self,other_counter_value_collection):
+        for k,v in other_counter_value_collection:
+            mv = self.get(k)
+            if mv is None:
+                # nothing local, just get it
+                self[k]=v
+            elif isinstance(mv,CounterValueBase):
+                if not isinstance(v,CounterValueBase):
+                    raise Exception("Can't merge with CounterValueCollection. Other Collection doesn't have a mergeable value for key %s" % (k,))
+                mv.merge_with(v)
+            else:
+                raise Exception("Can't merge with CounterValueCollection. Local key $s doesn't have a mergeable value." % (k,))

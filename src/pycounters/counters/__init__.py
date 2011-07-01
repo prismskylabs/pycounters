@@ -2,7 +2,7 @@ from collections import deque
 from copy import copy
 from time import time
 from pycounters.base import THREAD_DISPATCHER, BaseListener
-from pycounters.counters.base import BaseCounter, AutoDispatch, Timer, TimerMixin, TriggerMixin
+from pycounters.counters.base import BaseCounter, AutoDispatch, Timer, TimerMixin, TriggerMixin, AccumulativeCounterValue, AverageCounterValue
 
 __author__ = 'boaz'
 
@@ -16,7 +16,7 @@ class EventCounter(TriggerMixin,BaseCounter):
 
 
     def _get_value(self):
-        return self.value;
+        return AccumulativeCounterValue(self.value);
 
     def _report_event_value(self,name,value):
 
@@ -47,8 +47,11 @@ class AverageWindowCounter(AutoDispatch,BaseCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values:
-            return 0.0
-        return sum(self.values, 0.0) / len(self.values)
+            v= 0.0
+        else:
+            v =  sum(self.values, 0.0) / len(self.values)
+
+        return AverageCounterValue(v)
 
     def _trim_window(self):
         window_limit = self._get_current_time()-self.window_size
@@ -75,8 +78,8 @@ class FrequencyCounter(TriggerMixin,AverageWindowCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values or len(self.values)<1:
-            return 0.0
-        return sum(self.values, 0.0) / (self._get_current_time()-self.times[0])
+            return AccumulativeCounterValue(0.0)
+        return AccumulativeCounterValue(sum(self.values, 0.0) / (self._get_current_time()-self.times[0]))
 
 
 

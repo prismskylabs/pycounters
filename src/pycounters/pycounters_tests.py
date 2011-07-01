@@ -148,7 +148,7 @@ class MyTestCase(unittest.TestCase):
             f()
             f()
 
-            self.assertEqual(c.get_value(),2)
+            self.assertEqual(c.get_value().value,2)
         finally:
             unregister_counter(counter=c)
 
@@ -175,7 +175,7 @@ class MyTestCase(unittest.TestCase):
             g()
             f()
 
-            self.assertEquals(c.get_value(),0.5)
+            self.assertEquals(c.get_value().value,0.5)
         finally:
             unregister_counter(counter=c)
         
@@ -185,13 +185,13 @@ class MyTestCase(unittest.TestCase):
         test = AverageWindowCounter("test",window_size=0.5)
         test.report_event("test","value",1)
         test.report_event("test","value",2)
-        self.assertEquals(test.get_value(),1.5)
+        self.assertEquals(test.get_value().value,1.5)
 
         sleep(0.5)
-        self.assertEquals(test.get_value(),0.0)
+        self.assertEquals(test.get_value().value,0.0)
 
         test.report_event("test","value",1)
-        self.assertEquals(test.get_value(),1.0)
+        self.assertEquals(test.get_value().value,1.0)
 
 
 
@@ -199,8 +199,9 @@ class MyTestCase(unittest.TestCase):
     def test_basic_reporter(self):
         class ValueReporter(BaseReporter):
 
-            def _output_report(self,values):
-                self.last_values = values
+            def _output_report(self,counter_values_col):
+                self.last_values = counter_values_col.values
+
 
         v = ValueReporter()
         v.start_auto_report(0.01)
@@ -235,7 +236,7 @@ class MyTestCase(unittest.TestCase):
 
         test2.report_event("test1","value",3)
 
-        self.assertEquals(reg.get_values(), { "test1" : 2, "test2" : 3 })
+        self.assertEquals(reg.get_values().values, { "test1" : 2, "test2" : 3 })
 
 
 
@@ -254,15 +255,15 @@ class MyTestCase(unittest.TestCase):
             f()
             f()
 
-            self.assertEqual(c.get_value(),3L)
+            self.assertEqual(c.get_value().value,3L)
 
             c.clear()
 
-            self.assertEqual(c.get_value(),0L)
+            self.assertEqual(c.get_value().value,0L)
 
             f()
 
-            self.assertEqual(c.get_value(),1L)
+            self.assertEqual(c.get_value().value,1L)
         finally:
             unregister_counter(counter=c)
 
