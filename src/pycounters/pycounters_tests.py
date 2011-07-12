@@ -1,10 +1,13 @@
-
+import logging
+import multiprocessing
+import threading
 from time import sleep
 from pycounters import register_counter, report_start_end, unregister_counter
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
-from pycounters.reporters import BaseReporter
+from pycounters.reporters import BaseReporter, MultiprocessReporterBase, ReportingRole
+from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
 from pycounters.shortcuts import count, value, frequency, time
 
 __author__ = 'boaz'
@@ -211,7 +214,7 @@ class MyTestCase(unittest.TestCase):
 
         test1.report_event("test1","value",2)
 
-        sleep(0.05)
+        sleep(0.1)
         self.assertEqual(v.last_values, { "test1" : 2 })
 
         test1.report_event("test1","value",1)
@@ -304,5 +307,119 @@ class MyTestCase(unittest.TestCase):
         a.merge_with(b)
         self.assertEquals(a.value,4)
 
+
+    def test_process_elections(self):
+        debug_log = None # logging.getLogger("election")
+
+        statuses = [None,None,None]
+
+        def node(id):
+            leader = CollectingLeader(port=1234,debug_log=debug_log)
+            node = CollectingNode(None,None,port=1234,debug_log=debug_log)
+            (status,node_err,leader_err)=elect_leader(node,leader)
+            if debug_log: debug_log.info("status for me %s","leader" if status else "node")
+            statuses[id]=status
+
+            while None in statuses:
+                if debug_log: debug_log.info("Waiting: statuses sor far %s",repr(statuses))
+                sleep(0.1)
+
+            if status:
+                leader.stop_leading()
+            else:
+                node.close()
+        
+
+
+        p1 = threading.Thread(target=node,args=(0,))
+        p1.daemon=True
+        p2 = threading.Thread(target=node,args=(1,))
+        p2.daemon=True
+        p3 = threading.Thread(target=node,args=(2,))
+        p3.daemon=True
+        p1.start();
+        p2.start();
+        p3.start()
+        p1.join();
+        p2.join();
+        p3.join()
+
+        self.assertEqual(sorted(statuses),[False,False,True])
+
+    def test_auto_reelection(self):
+        debug_log = None #;logging.getLogger("reelection")
+        node1 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node2 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node3 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        try:
+            self.assertEqual(node1.actual_role,ReportingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
+            self.assertEqual(node3.actual_role,ReportingRole.NODE_ROLE)
+            if debug_log:
+                debug_log.info("Shutting down leader")
+
+            #switch port to avoid TIME_WAIT issues in tests
+            node2.leader.port = 8902
+            node2.node.port = 8902
+            node3.leader.port = 8902
+            node3.node.port = 8902
+
+            node1.shutdown() # this should cause re-election.
+            node1=None
+            sleep(0.5)
+            roles = [node2.actual_role,node3.actual_role]
+            self.assertEqual(sorted(roles),[0,1]) # there is a leader again
+
+        finally:
+            if node1:
+                node1.node.close()
+            node2.node.close()
+            node3.node.close()
+            if node1:
+                node1.leader.stop_leading()
+            node2.leader.stop_leading()
+            node3.leader.stop_leading()
+
+            
+
+
+
+    def test_basic_collections(self):
+        debug_log = None #logging.getLogger("collection")
+
+        vals = {}
+        def make_node(val):
+            class fake_node(MultiprocessReporterBase):
+                def node_get_values(self):
+                    return val
+
+                def _output_report(self,counter_values_col):
+                    vals.update(counter_values_col)
+
+            return  fake_node
+
+        # first define leader so people have things to connect to.
+        leader = make_node("4")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
+        try:
+            node1 = make_node("1")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node2 = make_node("2")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node3 = make_node("3")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+
+            leader.report()
+
+            self.assertEqual(sorted(vals.values()), ["1","2","3","4"])
+        except Exception as e:
+            if debug_log:
+                debug_log.error(e)
+
+            raise
+        finally:
+            leader.shutdown()
+
+
+
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG,format="%(asctime)s | %(process)d|%(thread)d | %(name)s | %(levelname)s | %(message)s")
+
     unittest.main()
