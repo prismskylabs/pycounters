@@ -170,10 +170,10 @@ class CounterValueCollection(dict):
         return r
 
     def merge_with(self,other_counter_value_collection):
-        for k,v in other_counter_value_collection:
+        for k,v in other_counter_value_collection.iteritems():
             mv = self.get(k)
             if mv is None:
-                # nothing local, just get it
+                # nothing local, just set it
                 self[k]=v
             elif isinstance(mv,CounterValueBase):
                 if not isinstance(v,CounterValueBase):

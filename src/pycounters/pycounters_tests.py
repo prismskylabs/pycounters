@@ -3,7 +3,7 @@ import multiprocessing
 import threading
 from time import sleep
 from pycounters import register_counter, report_start_end, unregister_counter
-from pycounters.base import CounterRegistry, THREAD_DISPATCHER
+from pycounters.base import CounterRegistry, THREAD_DISPATCHER, CounterValueCollection
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import BaseReporter, MultiprocessReporterBase, ReportingRole
@@ -391,7 +391,9 @@ class MyTestCase(unittest.TestCase):
         def make_node(val):
             class fake_node(MultiprocessReporterBase):
                 def node_get_values(self):
-                    return val
+                    c = CounterValueCollection()
+                    c["val"]=AccumulativeCounterValue(val)
+                    return c
 
                 def _output_report(self,counter_values_col):
                     vals.update(counter_values_col)
@@ -399,21 +401,31 @@ class MyTestCase(unittest.TestCase):
             return  fake_node
 
         # first define leader so people have things to connect to.
-        leader = make_node("4")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
+        leader = make_node(4)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
         try:
-            node1 = make_node("1")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node2 = make_node("2")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node3 = make_node("3")(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node1 = make_node(1)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node2 = make_node(2)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node3 = make_node(3)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
 
             leader.report()
+            self.assertEqual(vals["val"],1+2+3+4)
 
-            self.assertEqual(sorted(vals.values()), ["1","2","3","4"])
+            self.assertEqual(sorted([r["val"] for r in vals["__node_reports__"].values()])
+                             , [1,2,3,4])
         except Exception as e:
             if debug_log:
                 debug_log.error(e)
 
             raise
         finally:
+            if debug_log:
+                debug_log.info("Shutting done nodes")
+            node1.shutdown()
+            node2.shutdown()
+            node3.shutdown()
+
+            if debug_log:
+                debug_log.info("Shutting done leader")
             leader.shutdown()
 
 

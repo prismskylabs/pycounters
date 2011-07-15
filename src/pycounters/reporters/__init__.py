@@ -1,6 +1,7 @@
 import threading
 from ..base import GLOBAL_REGISTRY
 import time
+from pycounters.base import CounterValueBase, CounterValueCollection
 import tcpcollection
 
 __author__ = 'boaz'
@@ -65,7 +66,20 @@ class ReportingRole(object):
 class MultiprocessReporterBase(BaseReporter):
     """
         A base class to multiprocess aware reporter.
+
+        Reporters inheriting from this base class need to implement _output_report. The values collection
+        given to this function contains the aggregated value collection. Original per node values are
+        stored under the __original__ key.
+
     """
+
+#        Some more info about how this works:
+#            - every instance of this class has two components a node and a leader
+#            - By default the instances auto elect an active leader upon start up or when the leader becomes
+#                unavailable.
+#            - The elected leader is actually responsible for collecting values from all nodes and outputting it.
+#            - The nodes are supposed to deliver their report as a CounterValueCollection.
+#            - The leader merges it and output it.
 
 
 
@@ -120,14 +134,29 @@ class MultiprocessReporterBase(BaseReporter):
         """
         if self.actual_role == ReportingRole.LEADER_ROLE:
             values = self.leader_collect_values()
-            self._output_report(values)
+            merged_values = self.merge_values(values)
+            self._output_report(merged_values)
+
+
+    def merge_values(self,values):
+        merged_collection = CounterValueCollection()
+        original_values = {}
+        for node,report in values.iteritems():
+            self.log("Merging report from %s",node)
+            merged_collection.merge_with(report)
+            original_values[node]=report.values
+
+        res = merged_collection.values
+        res["__node_reports__"]=original_values
+        return res
+                    
 
 
     def leader_collect_values(self):
         return self.leader.collect_from_all_nodes()
 
     def node_get_values(self):
-        return GLOBAL_REGISTRY.get_values();
+        return GLOBAL_REGISTRY.get_values()
 
     def node_io_error_callback(self,err):
         self.log("Received an IO Error. Re-applying role")
@@ -141,19 +170,13 @@ class MultiprocessReporterBase(BaseReporter):
 
 
 
-
-
-
-class LogReporter(BaseReporter):
-    """ Log based reporter. Will report on demand (when LogReporter.report is called) or periodically
-        (use LogReporter.start_auto_report)
+class LogOutputMixin(object):
+    """ a mixin to add outputing to a log. Assumes there is
     """
-
-
-    def __init__(self,output_log):
+    def __init__(self,output_log=None,*args,**kwargs):
         """ output will be logged to output_log
         """
-        super(LogReporter,self).__init__()
+        super(LogReporter,self).__init__(*args,**kwargs)
         self.logger = output_log
 
     def _handle_background_error(self,e):
@@ -163,6 +186,19 @@ class LogReporter(BaseReporter):
         logs = sorted(counter_values_col.values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
 
         for k,v in logs:
-            self.logger.info("%s %s",k,v)
+            if not (k.startswith("__") and k.endswith("__")): ## don't output __node_reports__ etc.
+                self.logger.info("%s %s",k,v)
+
+class LogReporter(LogOutputMixin,BaseReporter):
+    """ Log based reporter. Will report on demand (when LogReporter.report is called) or periodically
+        (use LogReporter.start_auto_report)
+    """
+
+
+class MultiProcessLogReporter(LogOutputMixin,MultiprocessReporterBase):
+    """ Similar to LogReporter, but supports collecting data from multiple processes.
+    """
+
+
 
 
