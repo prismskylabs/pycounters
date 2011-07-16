@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import sys, os
 
 version = '0.2'
@@ -18,7 +18,7 @@ setup(name='pycounters',
       author_email='b.leskes@gmail.com',
       url='http://pycounters.readthedocs.org',
       license='apache',
-      packages=['pycounters'],
+      packages=find_packages('src'),
       package_dir = {'': 'src'},
       include_package_data=True,
       zip_safe=False,

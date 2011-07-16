@@ -209,7 +209,8 @@ class LogReporter(LogOutputMixin,BaseReporter):
 
 
 class MultiProcessLogReporter(LogOutputMixin,MultiprocessReporterBase):
-    """ Similar to LogReporter, but supports collecting data from multiple processes.
+    """
+        Similar to LogReporter, but supports collecting data from multiple processes.
     """
 
     pass
