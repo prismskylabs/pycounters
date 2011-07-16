@@ -10,7 +10,7 @@ __author__ = 'boaz'
 class BaseReporter(object):
 
 
-    def __init__(self):
+    def __init__(self,*args,**kwargs):
         self._auto_reporting_cycle = None
         self._auto_reporting_active = threading.Event()
         self._auto_reporting_thread = threading.Thread(target=self._auto_reporting_thread_target)
@@ -83,14 +83,14 @@ class MultiprocessReporterBase(BaseReporter):
 
 
 
-    def __init__(self,collecting_address="",collecting_port=760907,debug_log=None,role=ReportingRole.AUTO_ROLE,
-                 timeout_in_sec=120):
+    def __init__(self,collecting_address="",collecting_port=60907,debug_log=None,role=ReportingRole.AUTO_ROLE,
+                 timeout_in_sec=120,*args,**kwargs):
         """
             collecting_address = address of the machine data should be collected on.
             collecing_port = port of collecting process
             role = role of current process, set to AUTO for auto leader election
         """
-        super(MultiprocessReporterBase,self).__init__()
+        super(MultiprocessReporterBase,self).__init__(*args,**kwargs)
         self.debug_log= debug_log
         self.leader = tcpcollection.CollectingLeader(collecting_address,collecting_port,debug_log=debug_log)
         self.node = tcpcollection.CollectingNode(
@@ -176,7 +176,7 @@ class LogOutputMixin(object):
     def __init__(self,output_log=None,*args,**kwargs):
         """ output will be logged to output_log
         """
-        super(LogReporter,self).__init__(*args,**kwargs)
+        super(LogOutputMixin,self).__init__(*args,**kwargs)
         self.logger = output_log
 
     def _handle_background_error(self,e):

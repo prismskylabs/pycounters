@@ -1,4 +1,4 @@
-from SocketServer import BaseRequestHandler, TCPServer, UDPServer
+from SocketServer import BaseRequestHandler, TCPServer
 from itertools import repeat
 import threading
 import multiprocessing
@@ -7,6 +7,18 @@ import socket
 import time
 import traceback
 import itertools
+
+class ExplicitRequestClosingTCPServer(TCPServer):
+    """ A tcp server that doesn't automatically shutdown incoming requests
+    """
+
+    def process_request(self, request, client_address):
+        """Call finish_request.
+
+            Different from parent by that that it doesn't shutdown the request
+        """
+        self.finish_request(request, client_address)
+
 
 class CollectingNodeProxy(BaseRequestHandler):
     """ a proxy to the CollectingNode. Used by collecting leader to get info from collection Node.
@@ -40,12 +52,18 @@ class CollectingNodeProxy(BaseRequestHandler):
         self.wfile = self.connection.makefile('wb', self.wbufsize)
 
     def handle(self):
-        self.log("Handling an incoming registration request. Asking for node name.")
-        node_id = self.receive()
-        self.log("Connected to node %s" ,node_id)
-        self.id = node_id
-        self.leader.register_node_proxy(self)
-        self.send("ack")
+        try:
+            self.log("Handling an incoming registration request. Asking for node name.")
+            node_id = self.receive()
+            self.log("Connected to node %s" ,node_id)
+            self.id = node_id
+            self.leader.register_node_proxy(self)
+            self.send("ack")
+        except Exception as e:
+            st = traceback.format_exc()
+            self.log("Got an exception while dealing with an incoming request: %s, st:",e,st)
+            self.request.close()
+            raise
 
 
     def finish(self):
@@ -92,7 +110,8 @@ class CollectingLeader(object):
         """ tries to claim leader ship position. Returns none on success, an error message on failure
         """
         try:
-            self.tcp_server = TCPServer((self.address, self.port),self.make_stream_request_handler,bind_and_activate=False)
+            self.tcp_server = ExplicitRequestClosingTCPServer((self.address, self.port),
+                                                    self.make_stream_request_handler,bind_and_activate=False)
             self.allow_reuse_address = True
             try:
                 self.tcp_server.server_bind()
@@ -187,7 +206,7 @@ _GLOBAL_COUNTER= itertools.count()
 
 class CollectingNode(object):
 
-    def __init__(self,collect_callback,io_error_callback,address="",port=760907,debug_log=None):
+    def __init__(self,collect_callback,io_error_callback,address="",port=60907,debug_log=None):
         """ collect_callback will be called to collect values
             io_error_callbakc is called when an io error ocours (the exception is passed as a param).
                 NOTE: ** IT IS YOUR RESPONSIBILITY TO RE-Connect.
@@ -211,6 +230,7 @@ class CollectingNode(object):
         """
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(None)
         try:
             self.socket.connect((self.address, self.port))
         except  IOError as e:
@@ -300,6 +320,15 @@ class CollectingNode(object):
                 go=self.get_command_and_execute()
             except (IOError,EOFError) as e:
                 self.log("%s: Got an IOError/EOFError %s",self.id,e)
+                self.wfile.close()
+                self.rfile.close()
+                try:
+                    #explicitly shutdown.  socket.close() merely releases
+                    #the socket and waits for GC to perform the actual close.
+                    self.socket.shutdown(socket.SHUT_WR)
+                except socket.error:
+                    pass #some platforms may raise ENOTCONN here
+                self.socket.close()
                 if not self._shutting_down:
                     self.log("%s: Call io_error_callback.",self.id)
                     self.io_error_callback(e)

@@ -401,12 +401,11 @@ class MyTestCase(unittest.TestCase):
             return  fake_node
 
         # first define leader so people have things to connect to.
-        leader = make_node(4)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
+        leader = make_node(4)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
         try:
-            node1 = make_node(1)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node2 = make_node(2)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node3 = make_node(3)(collecting_port=2345,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-
+            node1 = make_node(1)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node2 = make_node(2)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node3 = make_node(3)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
             leader.report()
             self.assertEqual(vals["val"],1+2+3+4)
 
