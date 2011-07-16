@@ -6,6 +6,21 @@ import tcpcollection
 
 __author__ = 'boaz'
 
+class _noplogger(object):
+    """ a fake logger that does nothing
+    """
+
+    def debug(self,*args,**kwargs):
+        pass
+
+    def info(self,*args,**kwargs):
+        pass
+    def warning(self,*args,**kwargs):
+        pass
+    def exception(self,*args,**kwargs):
+        pass
+    def critical(self,*args,**kwargs):
+        pass
 
 class BaseReporter(object):
 
@@ -91,7 +106,7 @@ class MultiprocessReporterBase(BaseReporter):
             role = role of current process, set to AUTO for auto leader election
         """
         super(MultiprocessReporterBase,self).__init__(*args,**kwargs)
-        self.debug_log= debug_log
+        self.debug_log= debug_log if debug_log else _noplogger()
         self.leader = tcpcollection.CollectingLeader(collecting_address,collecting_port,debug_log=debug_log)
         self.node = tcpcollection.CollectingNode(
                 self.node_get_values,
@@ -110,7 +125,7 @@ class MultiprocessReporterBase(BaseReporter):
         elif self.role == ReportingRole.NODE_ROLE:
             self.node.connect_to_leader(timeout_in_sec=self.timeout_in_sec)
         elif self.role == ReportingRole.AUTO_ROLE:
-            self.log("Role is set to auto. Electing a leader.")
+            self.debug_log.info("Role is set to auto. Electing a leader.")
             (status, last_node_attempt_error, last_leader_attempt_error) =\
                 tcpcollection.elect_leader(self.node, self.leader, timeout_in_sec=self.timeout_in_sec)
 
@@ -118,15 +133,11 @@ class MultiprocessReporterBase(BaseReporter):
                 self.actual_role = ReportingRole.LEADER_ROLE
             else:
                 self.actual_role = ReportingRole.NODE_ROLE
-            self.log("Leader ellected. My Role is: %s", self.actual_role)
+            self.debug_log.info("Leader elected. My Role is: %s", self.actual_role)
 
         # and now start the node for this process, if leading
         if self.actual_role == ReportingRole.LEADER_ROLE:
             self.node.connect_to_leader()
-
-    def log(self,*args,**kwargs):
-        if self.debug_log:
-            self.debug_log.debug(*args,**kwargs)
 
 
     def report(self):
@@ -142,7 +153,7 @@ class MultiprocessReporterBase(BaseReporter):
         merged_collection = CounterValueCollection()
         original_values = {}
         for node,report in values.iteritems():
-            self.log("Merging report from %s",node)
+            self.debug_log.debug("Merging report from %s",node)
             merged_collection.merge_with(report)
             original_values[node]=report.values
 
@@ -159,7 +170,7 @@ class MultiprocessReporterBase(BaseReporter):
         return GLOBAL_REGISTRY.get_values()
 
     def node_io_error_callback(self,err):
-        self.log("Received an IO Error. Re-applying role")
+        self.debug_log.warning("Received an IO Error. Re-applying role")
         self.init_role()
 
 

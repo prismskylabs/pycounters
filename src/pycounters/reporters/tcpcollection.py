@@ -7,6 +7,7 @@ import socket
 import time
 import traceback
 import itertools
+import pycounters.reporters
 
 class ExplicitRequestClosingTCPServer(TCPServer):
     """ A tcp server that doesn't automatically shutdown incoming requests
@@ -38,12 +39,9 @@ class CollectingNodeProxy(BaseRequestHandler):
 
     def __init__(self,leader,request,client_address,server,debug_log=None):
         self.leader=leader
-        self.debug_log=debug_log
+        self.debug_log=debug_log if debug_log else pycounters.reporters._noplogger()
         BaseRequestHandler.__init__(self,request,client_address,server)
 
-    def log(self,*args,**kwargs):
-       if self.debug_log:
-           self.debug_log.debug(*args,**kwargs)
 
     ### BaseRequestHandler functions
     def setup(self):
@@ -53,15 +51,15 @@ class CollectingNodeProxy(BaseRequestHandler):
 
     def handle(self):
         try:
-            self.log("Handling an incoming registration request. Asking for node name.")
+            self.debug_log.debug("Handling an incoming registration request. Asking for node name.")
             node_id = self.receive()
-            self.log("Connected to node %s" ,node_id)
+            self.debug_log.info("Connected to node %s" ,node_id)
             self.id = node_id
             self.leader.register_node_proxy(self)
             self.send("ack")
         except Exception as e:
             st = traceback.format_exc()
-            self.log("Got an exception while dealing with an incoming request: %s, st:",e,st)
+            self.debug_log.exception("Got an exception while dealing with an incoming request: %s, st:",e,st)
             self.request.close()
             raise
 
@@ -99,7 +97,7 @@ class CollectingLeader(object):
     def __init__(self,address ="",port=760907,debug_log=None):
         self.address=address
         self.port = port
-        self.debug_log = debug_log
+        self.debug_log = debug_log if debug_log else pycounters.reporters._noplogger()
         self.lock = threading.RLock()
         self.node_proxies = dict()
         self.tcp_server = None
@@ -121,20 +119,20 @@ class CollectingLeader(object):
                 raise
 
         except IOError as e:
-            self.log("Failed to setup TCP Server %s:%s . Error: %s",self.address,self.port,e)
+            self.debug_log.info("Failed to setup TCP Server %s:%s . Error: %s",self.address,self.port,e)
             if throw:
                 raise
             return str(e)
 
-        self.log("Successfully gained leader ship. Start responding to nodes")
+        self.debug_log.info("Successfully gained leader ship. Start responding to nodes")
         self.leading = True
         def target():
             try:
-                self.log('serving thread is running')
+                self.debug_log.debug('serving thread is running')
                 self.tcp_server.serve_forever()
-                self.log('serving thread stoppinng')
+                self.debug_log.debug('serving thread stoppinng')
             except Exception as e:
-                self.log("Server had an error: %s",e)
+                self.debug_log.exception("Server had an error: %s",e)
 
         t=threading.Thread(target=target)
         t.daemon=True
@@ -151,7 +149,7 @@ class CollectingLeader(object):
             self.tcp_server.server_close()
         with self.lock:
             for node in self.node_proxies.itervalues():
-                self.log("Closing proxy for %s",node.id)
+                self.debug_log.debug("Closing proxy for %s",node.id)
                 node.close()
 
             self.node_proxies = {}
@@ -163,7 +161,7 @@ class CollectingLeader(object):
                 try:
                     node.send(data)
                 except IOError as e:
-                    self.log("Get an error when sending to node %s:\nerror:%s,\ndata:%s",node.id,e,data)
+                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s,\ndata:%s",node.id,e,data)
 
 
 
@@ -177,12 +175,12 @@ class CollectingLeader(object):
                 try:
                     ret[node.id]=node.send_and_receive("collect")
                 except IOError as e:
-                    self.log("Get an error when sending to node %s:\nerror:%s",node.id,e)
+                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s",node.id,e)
                     node.close()
                     error_nodes.append(node.id)
 
             for err_node in error_nodes:
-                self.log("Removing node %s from collection",errnode)
+                self.debug_log.debug("Removing node %s from collection",errnode)
                 del self.node_proxies[err_node]
 
         return ret
@@ -213,7 +211,7 @@ class CollectingNode(object):
         """
         self.address=address
         self.port =port
-        self.debug_log= debug_log
+        self.debug_log= debug_log if debug_log else pycounters.reporters._noplogger()
         self.collect_callback=collect_callback
         self.io_error_callback=io_error_callback
         self.background_thread=None
@@ -234,7 +232,7 @@ class CollectingNode(object):
         try:
             self.socket.connect((self.address, self.port))
         except  IOError as e:
-            self.log("%s: Failed to find leader on %s:%s . Error: %s",self.id,self.address,self.port,e)
+            self.debug_log.warning("%s: Failed to find leader on %s:%s . Error: %s",self.id,self.address,self.port,e)
             if throw:
                 raise
             return str(e)
@@ -271,23 +269,17 @@ class CollectingNode(object):
     def start_background_receive(self):
         def target():
             try:
-                self.log('Cmd exec thread is running')
+                self.debug_log.debug('Cmd exec thread is running')
                 self.execute_commands()
-                self.log('Cmd exec thread stoppinng')
+                self.debug_log.debug('Cmd exec thread stoppinng')
             except Exception as e:
-                st = traceback.format_exc()
-                self.log("Cmd exec had an error (id:%s): %s\n,STACK TRACE: %s",self.id,e,st)
+                self.debug_log.exception("Cmd exec had an error (id:%s): %s\n,STACK TRACE: %s",self.id,e)
 
         self.background_thread=threading.Thread(target=target)
         self.background_thread.daemon=True
         self.background_thread.start()
 
         return
-
-
-    def log(self,*args,**kwargs):
-        if self.debug_log:
-            self.debug_log.debug(*args,**kwargs)
 
 
     def send(self,data):
@@ -299,15 +291,15 @@ class CollectingNode(object):
 
     def get_command_and_execute(self):
         cmd = self.receive()
-        self.log("Got %s", cmd)
+        self.debug_log.debug("Got %s", cmd)
         if cmd=="quit":
             self.close()
             return False
         if cmd=="collect":
-            self.log("'%s': Collecting.",self.id)
+            self.debug_log.info("'%s': Collecting.",self.id)
             v=self.collect_callback()
             self.send(v)
-            self.log("'%s': Done collecting.",self.id)
+            self.debug_log.info("'%s': Done collecting.",self.id)
             return True
 
         if cmd=="wait":
@@ -319,7 +311,7 @@ class CollectingNode(object):
             try:
                 go=self.get_command_and_execute()
             except (IOError,EOFError) as e:
-                self.log("%s: Got an IOError/EOFError %s",self.id,e)
+                self.debug_log.exception("%s: Got an IOError/EOFError %s",self.id,e)
                 self.wfile.close()
                 self.rfile.close()
                 try:
@@ -330,13 +322,13 @@ class CollectingNode(object):
                     pass #some platforms may raise ENOTCONN here
                 self.socket.close()
                 if not self._shutting_down:
-                    self.log("%s: Call io_error_callback.",self.id)
+                    self.debug_log.info("%s: Call io_error_callback.",self.id)
                     self.io_error_callback(e)
                 go=False
 
 
     def close(self):
-        self.log("%s: closing..",self.id)
+        self.debug_log.info("%s: closing..",self.id)
         self._shutting_down=True
         if not self.wfile.closed:
             self.wfile.flush()

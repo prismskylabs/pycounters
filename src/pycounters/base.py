@@ -1,6 +1,7 @@
 from exceptions import NotImplementedError, Exception
 import logging
 from threading import RLock, local as thread_local
+import re
 
 
 class CounterRegistry(object):
@@ -60,12 +61,28 @@ class BaseListener(object):
 
 class EventLogger(BaseListener):
 
-    def __init__(self,logger,logging_level=logging.DEBUG):
+    def __init__(self,logger,name_filter=None,property_filter=None,logging_level=logging.DEBUG):
         self.logger = logger
         self.logging_level = logging_level
+        self.name_filter = None
+        if name_filter:
+            if isinstance(name_filter,basestring):
+                self.name_filter = re.compile(name_filter)
+            else:
+                self.name_filter = name_filter
+
+        if property_filter:
+            if isinstance(property_filter,basestring):
+                self.property_filter = re.compile(property_filter)
+            else:
+                self.property_filter = property_filter
 
 
     def report_event(self,name,property,param):
+        if self.name_filter and not self.name_filter.match(name):
+            return
+        if self.property_filter and not self.property_filter.match(property):
+            return
         self.logger.log(self.logging_level,"Event: name=%s property=%s param=%s",name,property,param)
 
 

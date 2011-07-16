@@ -1,5 +1,6 @@
 0.2:
     - Added multiprocess support.
+    - Extended EventLogger to allow regex based filtering of events it logs.
 
 0.1:
     - Initial Release
