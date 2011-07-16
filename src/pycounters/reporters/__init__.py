@@ -205,10 +205,14 @@ class LogReporter(LogOutputMixin,BaseReporter):
         (use LogReporter.start_auto_report)
     """
 
+    pass
+
 
 class MultiProcessLogReporter(LogOutputMixin,MultiprocessReporterBase):
     """ Similar to LogReporter, but supports collecting data from multiple processes.
     """
+
+    pass
 
 
 
