@@ -202,8 +202,8 @@ class MyTestCase(unittest.TestCase):
     def test_basic_reporter(self):
         class ValueReporter(BaseReporter):
 
-            def _output_report(self,counter_values_col):
-                self.last_values = counter_values_col.values
+            def _output_report(self,counter_values):
+                self.last_values = counter_values
 
 
         v = ValueReporter()

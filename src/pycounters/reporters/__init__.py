@@ -20,10 +20,10 @@ class BaseReporter(object):
     def report(self):
         """ Collects a report from the counters and outputs it
         """
-        values = GLOBAL_REGISTRY.get_values()
-        self._output_report(values)
+        values_col = GLOBAL_REGISTRY.get_values()
+        self._output_report(values_col.values)
     
-    def _output_report(self,counter_values_col):
+    def _output_report(self,counter_values):
         raise NotImplementedError("Implement _output_report in a subclass.")
 
 
@@ -182,8 +182,8 @@ class LogOutputMixin(object):
     def _handle_background_error(self,e):
         self.logger.exception(e)
 
-    def _output_report(self,counter_values_col):
-        logs = sorted(counter_values_col.values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
+    def _output_report(self,counter_values):
+        logs = sorted(counter_values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
 
         for k,v in logs:
             if not (k.startswith("__") and k.endswith("__")): ## don't output __node_reports__ etc.
