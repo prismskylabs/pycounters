@@ -7,7 +7,23 @@ import socket
 import time
 import traceback
 import itertools
-import pycounters.reporters
+
+class _noplogger(object):
+    """ a fake logger that does nothing
+    """
+
+    def debug(self,*args,**kwargs):
+        pass
+
+    def info(self,*args,**kwargs):
+        pass
+    def warning(self,*args,**kwargs):
+        pass
+    def exception(self,*args,**kwargs):
+        pass
+    def critical(self,*args,**kwargs):
+        pass
+
 
 class ExplicitRequestClosingTCPServer(TCPServer):
     """ A tcp server that doesn't automatically shutdown incoming requests
@@ -39,7 +55,7 @@ class CollectingNodeProxy(BaseRequestHandler):
 
     def __init__(self,leader,request,client_address,server,debug_log=None):
         self.leader=leader
-        self.debug_log=debug_log if debug_log else pycounters.reporters._noplogger()
+        self.debug_log=debug_log if debug_log else _noplogger()
         BaseRequestHandler.__init__(self,request,client_address,server)
 
 
@@ -97,7 +113,7 @@ class CollectingLeader(object):
     def __init__(self,address ="",port=760907,debug_log=None):
         self.address=address
         self.port = port
-        self.debug_log = debug_log if debug_log else pycounters.reporters._noplogger()
+        self.debug_log = debug_log if debug_log else _noplogger()
         self.lock = threading.RLock()
         self.node_proxies = dict()
         self.tcp_server = None
@@ -211,7 +227,7 @@ class CollectingNode(object):
         """
         self.address=address
         self.port =port
-        self.debug_log= debug_log if debug_log else pycounters.reporters._noplogger()
+        self.debug_log= debug_log if debug_log else _noplogger()
         self.collect_callback=collect_callback
         self.io_error_callback=io_error_callback
         self.background_thread=None

@@ -3,10 +3,13 @@ import multiprocessing
 import threading
 from time import sleep
 from pycounters import register_counter, report_start_end, unregister_counter
+import os
+import json
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER, CounterValueCollection
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
-from pycounters.reporters import BaseReporter, MultiprocessReporterBase, ReportingRole
+from pycounters.reporters import JSONFileReporter
+from pycounters.reporters.base import BaseReporter, ReportingRole, MultiprocessReporterBase
 from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
 from pycounters.shortcuts import count, value, frequency, time
 
@@ -211,20 +214,25 @@ class MyTestCase(unittest.TestCase):
 
         test1= EventCounter("test1")
         register_counter(test1)
+        try:
 
-        test1.report_event("test1","value",2)
+            test1.report_event("test1","value",2)
 
-        sleep(0.1)
-        self.assertEqual(v.last_values, { "test1" : 2 })
+            sleep(0.1)
+            self.assertEqual(v.last_values, { "test1" : 2 })
 
-        test1.report_event("test1","value",1)
-        sleep(0.05)
-        self.assertEqual(v.last_values, { "test1" : 3 })
+            test1.report_event("test1","value",1)
+            sleep(0.05)
+            self.assertEqual(v.last_values, { "test1" : 3 })
 
-        v.stop_auto_report()
-        test1.report_event("test1","value",1)
-        sleep(0.05)
-        self.assertEqual(v.last_values, { "test1" : 3 })
+            v.stop_auto_report()
+            test1.report_event("test1","value",1)
+            sleep(0.05)
+            self.assertEqual(v.last_values, { "test1" : 3 })
+
+        finally:
+            unregister_counter(counter=test1)
+
 
 
 
@@ -382,7 +390,23 @@ class MyTestCase(unittest.TestCase):
 
             
 
+    def test_json_output(self):
+        filename= "/tmp/json_test.txt"
+        jsfr  = JSONFileReporter(output_file=filename)
+        test1= EventCounter("test1")
+        register_counter(test1)
+        try:
 
+            test1.report_event("test1","value",2)
+
+            jsfr.report()
+            report = JSONFileReporter.safe_read(filename)
+            self.assertEqual(report, { "test1" : 2 })
+
+            os.unlink(filename)
+        finally:
+            unregister_counter(counter=test1)
+        
 
     def test_basic_collections(self):
         debug_log = None #logging.getLogger("collection")
