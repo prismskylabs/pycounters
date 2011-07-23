@@ -1,6 +1,8 @@
 0.2:
     - Added multiprocess support.
     - Extended EventLogger to allow regex based filtering of events it logs.
+    - Added JSONFileReporter to output reports in JSON format
+    - Added a utility to faciliate writing Munin plugins
 
 0.1:
     - Initial Release
