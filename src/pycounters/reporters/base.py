@@ -26,8 +26,8 @@ class BaseReporter(object):
         self._output_report(values_col.values)
 
     def _output_report(self,counter_values):
-        raise NotImplementedError("Implement _output_report in a subclass.")
-
+         # raise NotImplementedError("Implement _output_report in a subclass.")
+        pass
 
     def start_auto_report(self,seconds=300):
         """
@@ -180,6 +180,7 @@ class LogOutputMixin(object):
         self.logger.exception(e)
 
     def _output_report(self,counter_values):
+        super(LogOutputMixin,self)._output_report(counter_values) ## behave nice with other mixins
         logs = sorted(counter_values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
 
         for k,v in logs:
@@ -202,6 +203,7 @@ class JSONFileOutputMixin(object):
 
 
     def _output_report(self,counter_values):
+        super(JSONFileOutputMixin,self)._output_report(counter_values) ## behave nice with other mixins
         JSONFileOutputMixin.safe_write(counter_values,self.output_file)
 
 
