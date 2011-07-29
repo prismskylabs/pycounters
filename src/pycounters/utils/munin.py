@@ -47,30 +47,33 @@ class Plugin(object):
         self.config = config
 
 
-    def output_data(self):
+    def counter_id_to_munin_id(self,counter_id):
+        return counter_id.replace(" ","_").replace(".","_")
+
+    def output_data(self,config):
         """ executes the data command
         """
 
         values = reporters.JSONFileReporter.safe_read(self.output_file)
-        for graph in self.config:
+        for graph in config:
             if not graph.get("id"):
                 raise Exception("Missing graph id")
-            _fprint("multigraph %s",graph["id"])
+            _fprint("multigraph %s",self.counter_id_to_munin_id(graph["id"]))
             for data in graph.get("data"):
                 counter = data.get("counter")
                 v = values.get(counter)
                 if v is not None:
-                    _fprint("%s.value %s",counter,v)
+                    _fprint("%s.value %s",self.counter_id_to_munin_id(counter),v)
 
 
 
-    def output_config(self):
+    def output_config(self,config):
         """ executes the config command
         """
-        for graph in self.config:
+        for graph in config:
             if not graph.get("id"):
                 raise Exception("Missing graph id")
-            _fprint("multigraph %s",graph["id"])
+            _fprint("multigraph %s",self.counter_id_to_munin_id(graph["id"]))
             for g_opt,g_val in graph.get("global",{}).iteritems():
                 _fprint("graph_%s %s",g_opt,g_val)
 
@@ -82,7 +85,7 @@ class Plugin(object):
                 for g_opt,g_val in data.iteritems():
                     if g_opt == "counter":
                         continue
-                    _fprint("%s.%s %s",counter,g_opt,g_val)
+                    _fprint("%s.%s %s",self.counter_id_to_munin_id(counter),g_opt,g_val)
 
 
             _fprint("")
@@ -91,6 +94,6 @@ class Plugin(object):
     def process_cmd(self):
         """process munin command and output requested data or config"""
         if sys.argv[-1] == 'config':
-            self.output_config()
+            self.output_config(self.config)
         else:
-            self.output_data()
+            self.output_data(self.config)
