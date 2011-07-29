@@ -475,7 +475,7 @@ class MyTestCase(unittest.TestCase):
         munin._fprint = fake_print
         plugin = munin.Plugin(json_output_file=filename,config=cfg)
 
-        plugin.output_config()
+        plugin.output_config(cfg)
 
         self.assertEqual(output,[
             "multigraph test","graph_title T","test1.label Test",""
@@ -492,7 +492,7 @@ class MyTestCase(unittest.TestCase):
 
             jsfr.report()
 
-            plugin.output_data()
+            plugin.output_data(cfg)
             self.assertEqual(output,["multigraph test","test1.value 2"])
 
             os.unlink(filename)

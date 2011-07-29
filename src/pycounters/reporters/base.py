@@ -3,6 +3,7 @@ import threading
 import time
 import os
 import json
+import fcntl
 from pycounters.base import GLOBAL_REGISTRY, CounterValueCollection
 from . import tcpcollection
 
@@ -207,15 +208,35 @@ class JSONFileOutputMixin(object):
         JSONFileOutputMixin.safe_write(counter_values,self.output_file)
 
 
+    @staticmethod
+    def _lockfile(file):
+        try:
+            fcntl.flock(file, fcntl.LOCK_EX)
+            return True
+        except IOError, exc_value:
+        #  IOError: [Errno 11] Resource temporarily unavailable
+            if exc_value[0] == 11 or exc_value[0] == 35:
+                return False
+            else:
+                raise
+
+    @staticmethod
+    def _unlockfile(file):
+        fcntl.flock(file, fcntl.LOCK_UN)
 
     @staticmethod
     def safe_write(value,filename):
         """ safely writes value in a JSON format to file
         """
-        fd=os.open(filename,os.O_CREAT | os.O_TRUNC | os.O_WRONLY | os.O_EXLOCK)
-        with os.fdopen(fd,"w") as file:
-            json.dump(value,file)
+        fd=os.open(filename,os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
+        JSONFileOutputMixin._lockfile(fd)
+        try:
 
+            file=os.fdopen(fd,"w")
+            json.dump(value,file)
+        finally:
+            JSONFileOutputMixin._unlockfile(fd)
+            file.close()
         # fd is now close by the with clause
 
 
@@ -223,9 +244,14 @@ class JSONFileOutputMixin(object):
     def safe_read(filename):
        """ safely reads a value in a JSON format frome file
        """
-       fd=os.open(filename,os.O_RDONLY | os.O_EXLOCK)
-       with os.fdopen(fd,"r") as file:
+       fd=os.open(filename,os.O_RDONLY)
+       JSONFileOutputMixin._lockfile(fd)
+       try:
+           file=os.fdopen(fd,"r")
            return json.load(file)
+       finally:
+           JSONFileOutputMixin._unlockfile(fd)
+           file.close()
 
         # fd is now close by the with clause
 
