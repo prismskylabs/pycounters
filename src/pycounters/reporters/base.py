@@ -53,12 +53,14 @@ class BaseReporter(object):
         while new_wait():
             try:
                 self.report()
-                time.sleep(self._auto_reporting_cycle)
             except Exception as e:
                 try:
                     self._handle_background_error(e)
                 except:
                     pass
+
+            time.sleep(self._auto_reporting_cycle)
+
 
 
 class ReportingRole(object):
