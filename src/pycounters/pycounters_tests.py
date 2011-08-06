@@ -323,8 +323,8 @@ class MyTestCase(unittest.TestCase):
         statuses = [None,None,None]
 
         def node(id):
-            leader = CollectingLeader(port=1234,debug_log=debug_log)
-            node = CollectingNode(None,None,port=1234,debug_log=debug_log)
+            leader = CollectingLeader(hosts_and_ports=[("",1234)],debug_log=debug_log)
+            node = CollectingNode(None,None,hosts_and_ports=[("",1234)],debug_log=debug_log)
             (status,node_err,leader_err)=elect_leader(node,leader)
             if debug_log: debug_log.info("status for me %s","leader" if status else "node")
             statuses[id]=status
@@ -356,10 +356,10 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(sorted(statuses),[False,False,True])
 
     def test_auto_reelection(self):
-        debug_log = None #;logging.getLogger("reelection")
-        node1 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
-        node2 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
-        node3 = MultiprocessReporterBase(collecting_port=4567,debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        debug_log = None # logging.getLogger("reelection")
+        node1 = MultiprocessReporterBase(collecting_address=[("",4567),("",4568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node2 = MultiprocessReporterBase(collecting_address=[("",4567),("",4568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node3 = MultiprocessReporterBase(collecting_address=[("",4567),("",4568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         try:
             self.assertEqual(node1.actual_role,ReportingRole.LEADER_ROLE)
             self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
@@ -367,29 +367,89 @@ class MyTestCase(unittest.TestCase):
             if debug_log:
                 debug_log.info("Shutting down leader")
 
-            #switch port to avoid TIME_WAIT issues in tests
-            node2.leader.port = 8902
-            node2.node.port = 8902
-            node3.leader.port = 8902
-            node3.node.port = 8902
-
             node1.shutdown() # this should cause re-election.
             node1=None
             sleep(0.5)
+            with node2.lock:
+                pass ## causes to wait until node2 finished re-electing
+            with node3.lock:
+                pass ## causes to wait until node2 finished re-electing
+
             roles = [node2.actual_role,node3.actual_role]
             self.assertEqual(sorted(roles),[0,1]) # there is a leader again
 
         finally:
             if node1:
                 node1.node.close()
-            node2.node.close()
+            node2.node.close() # shutting down nodes first to avoid re-election..
             node3.node.close()
             if node1:
-                node1.leader.stop_leading()
-            node2.leader.stop_leading()
-            node3.leader.stop_leading()
+                node1.shutdown()
+            node2.shutdown()
+            node3.shutdown()
 
-            
+    def test_auto_server_upgrade_auto_role_simple(self):
+        debug_log = None #logging.getLogger("upgrade_auto")
+        node1 = MultiprocessReporterBase(collecting_address=[("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node2 = MultiprocessReporterBase(collecting_address=[("",5567),("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        try:
+            self.assertEqual(node1.actual_role,ReportingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
+
+            if debug_log:
+                debug_log.info("Telling the leader it's on a lower level")
+
+            node1.collecting_address=[("",5567),("",5568)]
+            node1.leader.leading_level=1
+
+            node1._auto_upgrade_server_level_target(wait_time=10)
+
+            sleep(0.5)
+            self.assertEqual(node1.leader.leading_level,0)
+
+            with node2.lock: ## wait for node2 to stablize..
+                pass
+
+
+            self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
+
+        finally:
+            node2.shutdown()
+            node1.shutdown()
+
+    def test_auto_server_upgrade_auto_role_switching_roles(self):
+        debug_log = logging.getLogger("upgrade_switch")
+        node1 = MultiprocessReporterBase(collecting_address=[("",7568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        node2 = MultiprocessReporterBase(collecting_address=[("",7567),("",7568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+        try:
+            self.assertEqual(node1.actual_role,ReportingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
+
+            node3 = MultiprocessReporterBase(collecting_address=[("",7567)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
+            self.assertEqual(node3.actual_role,ReportingRole.LEADER_ROLE)
+
+            if debug_log:
+                debug_log.info("Telling the leader it's on a lower level")
+
+            node1.collecting_address=[("",7567),("",7568)]
+            node1.leader.leading_level=1
+
+            node1._auto_upgrade_server_level_target(wait_time=10)
+
+            sleep(0.5)
+            self.assertEqual(node1.actual_role,ReportingRole.NODE_ROLE)
+
+            with node2.lock: ## wait for node2 to stablize..
+                pass
+
+
+            self.assertEqual(node2.actual_role,ReportingRole.NODE_ROLE)
+
+        finally:
+            node2.shutdown()
+            node1.shutdown()
+            node3.shutdown()
+
 
     def test_json_output(self):
         filename= "/tmp/json_test.txt"
@@ -410,7 +470,7 @@ class MyTestCase(unittest.TestCase):
         
 
     def test_basic_collections(self):
-        debug_log = None #logging.getLogger("collection")
+        debug_log = None # logging.getLogger("collection")
 
         vals = {}
         def make_node(val):
@@ -426,11 +486,11 @@ class MyTestCase(unittest.TestCase):
             return  fake_node
 
         # first define leader so people have things to connect to.
-        leader = make_node(4)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
+        leader = make_node(4)(collecting_address=("",60907),debug_log=debug_log,role=ReportingRole.LEADER_ROLE)
         try:
-            node1 = make_node(1)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node2 = make_node(2)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
-            node3 = make_node(3)(collecting_port=60907,debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node1 = make_node(1)(collecting_address=("",60907),debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node2 = make_node(2)(collecting_address=("",60907),debug_log=debug_log,role=ReportingRole.NODE_ROLE)
+            node3 = make_node(3)(collecting_address=("",60907),debug_log=debug_log,role=ReportingRole.NODE_ROLE)
             leader.report()
             self.assertEqual(vals["val"],1+2+3+4)
 

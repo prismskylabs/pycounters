@@ -89,7 +89,7 @@ class MultiprocessReporterBase(BaseReporter):
 
 
 
-    def __init__(self,collecting_address="",collecting_port=60907,debug_log=None,role=ReportingRole.AUTO_ROLE,
+    def __init__(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=ReportingRole.AUTO_ROLE,
                  timeout_in_sec=120,*args,**kwargs):
         """
             collecting_address = address of the machine data should be collected on.
@@ -98,46 +98,146 @@ class MultiprocessReporterBase(BaseReporter):
         """
         super(MultiprocessReporterBase,self).__init__(*args,**kwargs)
         self.debug_log= debug_log if debug_log else tcpcollection._noplogger()
-        self.leader = tcpcollection.CollectingLeader(collecting_address,collecting_port,debug_log=debug_log)
-        self.node = tcpcollection.CollectingNode(
-                self.node_get_values,
-                self.node_io_error_callback,
-                address=collecting_address,port=collecting_port,debug_log=debug_log)
-
+        self.lock = threading.RLock()
+        self.collecting_address=tcpcollection.normalize_hosts_and_ports(collecting_address)
+        self.leader =None
+        self.node = None
         self.role = role
         self.actual_role = self.role
         self.timeout_in_sec=timeout_in_sec
 
         self.init_role()
 
+
+    def _create_leader(self,collecting_addresses=None):
+        if collecting_addresses is None:
+            collecting_addresses = self.collecting_address
+        return tcpcollection.CollectingLeader(hosts_and_ports=collecting_addresses,debug_log=self.debug_log)
+
+    def _create_node(self,collecting_addresses=None):
+        if collecting_addresses is None:
+            collecting_addresses = self.collecting_address
+
+        return tcpcollection.CollectingNode(
+               self.node_get_values,
+               self.node_io_error_callback,
+               hosts_and_ports=collecting_addresses,debug_log=self.debug_log)
+
     def init_role(self):
-        if self.role == ReportingRole.LEADER_ROLE:
-            self.leader.try_to_lead(throw=True)
-        elif self.role == ReportingRole.NODE_ROLE:
-            self.node.connect_to_leader(timeout_in_sec=self.timeout_in_sec)
-        elif self.role == ReportingRole.AUTO_ROLE:
-            self.debug_log.info("Role is set to auto. Electing a leader.")
-            (status, last_node_attempt_error, last_leader_attempt_error) =\
-                tcpcollection.elect_leader(self.node, self.leader, timeout_in_sec=self.timeout_in_sec)
+        with self.lock:
+            self.actual_role = None # mark things as unknown...
 
-            if status:
+            if self.role == ReportingRole.LEADER_ROLE:
+                self.leader= self._create_leader()
+                self.leader.try_to_lead(throw=True)
                 self.actual_role = ReportingRole.LEADER_ROLE
-            else:
+                self.node = self._create_node() ## create node for this process
+                self.node.connect_to_leader()
+            elif self.role == ReportingRole.NODE_ROLE:
+                self.node = self._create_node()
+                self.node.connect_to_leader(timeout_in_sec=self.timeout_in_sec)
                 self.actual_role = ReportingRole.NODE_ROLE
-            self.debug_log.info("Leader elected. My Role is: %s", self.actual_role)
+            elif self.role == ReportingRole.AUTO_ROLE:
+                self.node = self._create_node()
+                self.leader= self._create_leader()
+                self.debug_log.info("Role is set to auto. Electing a leader.")
+                (status, last_node_attempt_error, last_leader_attempt_error) =\
+                    tcpcollection.elect_leader(self.node, self.leader, timeout_in_sec=self.timeout_in_sec)
 
-        # and now start the node for this process, if leading
-        if self.actual_role == ReportingRole.LEADER_ROLE:
-            self.node.connect_to_leader()
+                if status:
+                    self.actual_role = ReportingRole.LEADER_ROLE
+                    self.node.connect_to_leader() ## node for current process.
+                else:
+                    self.actual_role = ReportingRole.NODE_ROLE
+
+                self.debug_log.info("Leader elected. My Role is: %s", self.actual_role)
+
+            if self.actual_role == ReportingRole.LEADER_ROLE:
+
+
+                if self.leader.leading_level >0 :
+                    # set an upgrading thread to try claim preferred leading settings
+
+                    upgrading_thread=threading.Thread(target=self._auto_upgrade_server_level_target)
+                    upgrading_thread.daemon=True
+                    upgrading_thread.start()
+                    
+
+    def _try_upgrading_leader(self,potential_addresses):
+        self.debug_log.debug("Trying to upgrade leadership")
+        new_leader=self._create_leader(collecting_addresses=potential_addresses)
+        status = new_leader.try_to_lead()
+        if status is None:
+            self.debug_log.info("New leader is established. Level is %s",new_leader.leading_level)
+            with self.lock:
+                if self.node:
+                    self.debug_log.info("Creating a new node to connect to the new leader..")
+                    new_node = self._create_node(collecting_addresses=potential_addresses)
+                    new_node.connect_to_leader()
+                    self.node.close()
+                    self.node = new_node
+
+                self.leader.stop_leading()
+                self.leader = new_leader
+
+            return True
+
+        return False
+
+
+
+
+    def _auto_upgrade_server_level_target(self,wait_time=60):
+        """ a target function for upgrading server level, if it happens to be too high..
+        """
+        while True:
+            if self.actual_role != ReportingRole.LEADER_ROLE or self.leader.leading_level==0:
+                self.debug_log.info("server upgrading stopped - I'm not a leader or leading level is 0")
+                return
+
+            potential_addresses = self.collecting_address[:self.leader.leading_level]
+
+
+            if self.role == ReportingRole.AUTO_ROLE:
+                # node is in auto_role... first figure out if the is some other leading available with a better
+                # level...
+                self.debug_log.debug("Trying to find a better leader")
+                new_node = self._create_node(collecting_addresses=potential_addresses)
+                status = new_node.try_connecting_to_leader()
+                if status is None:
+                    ## some other leader exist with a higher order..
+
+                    self.debug_log.info("Found a leader of a higher order. Switching to a node role")
+                    with self.lock:
+                        self.node.close()
+                        self.node = new_node
+                        self.actual_role = ReportingRole.NODE_ROLE
+                        self.leader.stop_leading()
+                        self.leader = None
+
+                    return
+
+            ## Node is either in auto role with no alternative leader
+            ## or it has been designated as a leader. Both cases mean trying to upgrade leader
+            self._try_upgrading_leader(potential_addresses)
+
+            if self.leader.leading_level == 0:
+                self.debug_log.debug("Highest level achieved. Stopping.")
+                return
+
+
+            self.debug_log.debug("Failed to upgrade to a higher level... waiting and trying again..")
+            time.sleep(wait_time)
 
 
     def report(self):
         """ outputs a report on leader process. O.w. a no-op
         """
         if self.actual_role == ReportingRole.LEADER_ROLE:
-            values = self.leader_collect_values()
-            merged_values = self.merge_values(values)
-            self._output_report(merged_values)
+            with self.lock:
+                values = self.leader_collect_values()
+                merged_values = self.merge_values(values)
+                self._output_report(merged_values)
 
 
     def merge_values(self,values):
@@ -166,8 +266,14 @@ class MultiprocessReporterBase(BaseReporter):
 
 
     def shutdown(self):
-        self.node.close()
-        self.leader.stop_leading()
+        with self.lock:
+            self.actual_role=None
+            if self.node:
+                self.node.close()
+                self.node = None
+            if self.leader:
+                self.leader.stop_leading()
+                self.leader=None
 
 
 class LogOutputMixin(object):

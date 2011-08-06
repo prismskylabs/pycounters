@@ -76,7 +76,7 @@ class CollectingNodeProxy(BaseRequestHandler):
         except Exception as e:
             st = traceback.format_exc()
             self.debug_log.exception("Got an exception while dealing with an incoming request: %s, st:",e,st)
-            self.request.close()
+            self.close()
             raise
 
 
@@ -103,6 +103,16 @@ class CollectingNodeProxy(BaseRequestHandler):
         self.rfile.close()
         self.connection.close()
 
+def normalize_hosts_and_ports(hosts_and_ports):
+    """ normalize the various options of hosts_and_ports int a list of
+        host and port tuples
+    """
+    if isinstance(hosts_and_ports[0],list) or isinstance(hosts_and_ports[0],tuple):
+        # already in right format:
+        return hosts_and_ports
+
+    # a single tuple:
+    return [hosts_and_ports]
 
 
 class CollectingLeader(object):
@@ -110,38 +120,53 @@ class CollectingLeader(object):
         A class which sets up a socket server for collecting reports from CollectingNodes
     """
 
-    def __init__(self,address ="",port=760907,debug_log=None):
-        self.address=address
-        self.port = port
+    def __init__(self,hosts_and_ports=[("",60709),("",60708)],debug_log=None):
+        self.hosts_and_ports=normalize_hosts_and_ports(hosts_and_ports)
         self.debug_log = debug_log if debug_log else _noplogger()
         self.lock = threading.RLock()
         self.node_proxies = dict()
         self.tcp_server = None
-        self.leading = False
+        self.leading_level = None # if leading this is set to the sequential number of the chosen host and port
+
+
+    @property
+    def leading(self):
+        return self.leading_level is not None
+
+
 
 
     def try_to_lead(self,throw=False):
-        """ tries to claim leader ship position. Returns none on success, an error message on failure
+        """ Iterates of host_and_ports trying to claim leadership position.
+           Returns none on success or the last error message on failure
+
         """
-        try:
-            self.tcp_server = ExplicitRequestClosingTCPServer((self.address, self.port),
-                                                    self.make_stream_request_handler,bind_and_activate=False)
-            self.allow_reuse_address = True
+        for potential_level in range(len(self.hosts_and_ports)):
             try:
-                self.tcp_server.server_bind()
-                self.tcp_server.server_activate()
-            except:
-                self.tcp_server.server_close()
-                raise
+                self.tcp_server = ExplicitRequestClosingTCPServer(self.hosts_and_ports[potential_level],
+                                                        self.make_stream_request_handler,bind_and_activate=False)
+                self.allow_reuse_address = True
+                try:
+                    self.tcp_server.server_bind()
+                    self.tcp_server.server_activate()
+                except:
+                    self.tcp_server.server_close()
+                    raise
 
-        except IOError as e:
-            self.debug_log.info("Failed to setup TCP Server %s:%s . Error: %s",self.address,self.port,e)
-            if throw:
-                raise
-            return str(e)
+                # success!
+                self.leading_level = potential_level
+                break
 
-        self.debug_log.info("Successfully gained leader ship. Start responding to nodes")
-        self.leading = True
+            except IOError as e:
+                self.debug_log.info("Failed to setup TCP Server %s . Error: %s",self.hosts_and_ports[potential_level],e)
+                if potential_level == len(self.hosts_and_ports)-1:
+                    # nothing to do, give up.
+                    if throw:
+                        raise
+                    return str(e)
+
+        self.debug_log.info("Successfully gained leader ship on %s (level: %s). Start responding to nodes",
+                            self.hosts_and_ports[self.leading_level],self.leading_level)
         def target():
             try:
                 self.debug_log.debug('serving thread is running')
@@ -220,18 +245,18 @@ _GLOBAL_COUNTER= itertools.count()
 
 class CollectingNode(object):
 
-    def __init__(self,collect_callback,io_error_callback,address="",port=60907,debug_log=None):
+    def __init__(self,collect_callback,io_error_callback,hosts_and_ports=[("",60709),("",60708)],debug_log=None):
         """ collect_callback will be called to collect values
             io_error_callbakc is called when an io error ocours (the exception is passed as a param).
                 NOTE: ** IT IS YOUR RESPONSIBILITY TO RE-Connect.
         """
-        self.address=address
-        self.port =port
+        self.hosts_and_ports=normalize_hosts_and_ports(hosts_and_ports)
         self.debug_log= debug_log if debug_log else _noplogger()
         self.collect_callback=collect_callback
         self.io_error_callback=io_error_callback
         self.background_thread=None
         self.id = self.gen_id()
+        self.wfile  = self.rfile= self.socket= None
         self._shutting_down=False
 
 
@@ -240,18 +265,29 @@ class CollectingNode(object):
         return socket.getfqdn()+"_"+str(multiprocessing.current_process().ident)+"_"+str(id)
 
     def try_connecting_to_leader(self,throw=False):
-        """ tries to find an elected leader. Returns None on success , error message on failure
+        """ tries to find an elected leader on one of the give hosts and ports.
+            Returns None on success or the last error message on failure
         """
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(None)
-        try:
-            self.socket.connect((self.address, self.port))
-        except  IOError as e:
-            self.debug_log.warning("%s: Failed to find leader on %s:%s . Error: %s",self.id,self.address,self.port,e)
-            if throw:
-                raise
-            return str(e)
+        self.socket = None
+
+        for host_port_index in range(len(self.hosts_and_ports)):
+            try:
+                candidate_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                candidate_socket.settimeout(None)
+                candidate_socket.connect(self.hosts_and_ports[host_port_index])
+
+                self.socket=candidate_socket
+                break # success!
+
+            except  IOError as e:
+                self.debug_log.warning("%s: Failed to find leader on %s . Error: %s",self.id,
+                                       self.hosts_and_ports[host_port_index],e)
+                if host_port_index == len(self.hosts_and_ports)-1:
+                    self.socket = None
+                    if throw:
+                        raise
+                    return str(e)
 
         self.rfile = self.socket.makefile('rb', 1)
         self.wfile = self.socket.makefile('wb', 1)
@@ -327,30 +363,34 @@ class CollectingNode(object):
             try:
                 go=self.get_command_and_execute()
             except (IOError,EOFError) as e:
-                self.debug_log.exception("%s: Got an IOError/EOFError %s",self.id,e)
-                self.wfile.close()
-                self.rfile.close()
-                try:
-                    #explicitly shutdown.  socket.close() merely releases
-                    #the socket and waits for GC to perform the actual close.
-                    self.socket.shutdown(socket.SHUT_WR)
-                except socket.error:
-                    pass #some platforms may raise ENOTCONN here
-                self.socket.close()
                 if not self._shutting_down:
+                    self.debug_log.exception("%s: Got an IOError/EOFError %s",self.id,e)
+                    self._close_socket()
+
                     self.debug_log.info("%s: Call io_error_callback.",self.id)
                     self.io_error_callback(e)
                 go=False
 
 
+    def _close_socket(self):
+        self.wfile.close()
+        self.rfile.close()
+        try:
+            #explicitly shutdown.  socket.close() merely releases
+            #the socket and waits for GC to perform the actual close.
+            self.socket.shutdown(socket.SHUT_WR)
+        except socket.error:
+            pass #some platforms may raise ENOTCONN here
+        self.socket.close()
+
     def close(self):
         self.debug_log.info("%s: closing..",self.id)
         self._shutting_down=True
-        if not self.wfile.closed:
-            self.wfile.flush()
-        self.wfile.close()
-        self.rfile.close()
-        self.socket.close()
+        if self.socket:
+            if self.wfile.closed:
+                self.wfile.flush()
+            
+            self._close_socket()
 
 
 
