@@ -20,3 +20,5 @@ testing/*.egg-info
 .pydevproject
 .pydevproject.bak
 .idea
+docs/html
+docs/doctrees

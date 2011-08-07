@@ -84,6 +84,8 @@ At the moment PyCounters can only output to python logs. You do so by creating a
 turning auto reporting on (using :py:meth:`LogReporter.start_auto_report` .)
 
 
+.. _shortcuts:
+
 ---------------------
 Shortcuts
 ---------------------

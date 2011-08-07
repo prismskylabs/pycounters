@@ -43,7 +43,7 @@ Counters
     :inherited-members:
 
 ------------------
-Counters
+Reporters
 ------------------
 
 .. py:currentmodule:: pycounters.reporters
@@ -51,6 +51,12 @@ Counters
 .. autoclass:: LogReporter
     :members:
     :inherited-members:
+
+
+.. autoclass:: JSONFileReporter
+    :members:
+    :inherited-members:
+
 
 --------------------
 Registering counters

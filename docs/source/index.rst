@@ -8,7 +8,7 @@ PyCounters
 =================
 
 PyCounters is a light weight library to monitor performance and events in production systems.
-
+ 
 -----------------
 Typical use cases
 -----------------
@@ -98,6 +98,7 @@ Easy install PyCounters to get it up and running: ::
 
     easy_install pycounters
 
+Take a look at the :ref:`getting_started` tutorial for more details.
 
 ----------------------------------
 Cool, but it would be great if ...
@@ -109,8 +110,6 @@ you feel are outright stupid - I'd love to hear. Make ticket on https://bitbucke
 Here is what I have in mind so far:
  * `Django <http://www.djangoproject.com/>`_ integration (I'm currently working on this)
  * `Geckoboard <http://www.geckoboard.com>`_ output
- * `Munin <http://munin-monitoring.org/>`_ plugin
- * Cross process aggregation
 
 Of course, you are more then welcome to browse and/or fork the code: https://bitbucket.org/bleskes/pycounters
 
@@ -122,7 +121,9 @@ Further reading
 
 .. toctree::
    :maxdepth: 3
-   
+
+   getting_started
    moving_parts
    reference
+   utilities
 
