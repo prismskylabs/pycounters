@@ -170,13 +170,7 @@ class MultiprocessReporterBase(BaseReporter):
         if status is None:
             self.debug_log.info("New leader is established. Level is %s",new_leader.leading_level)
             with self.lock:
-                if self.node:
-                    self.debug_log.info("Creating a new node to connect to the new leader..")
-                    new_node = self._create_node(collecting_addresses=potential_addresses)
-                    new_node.connect_to_leader()
-                    self.node.close()
-                    self.node = new_node
-
+                self.leader.reconnect_nodes()
                 self.leader.stop_leading()
                 self.leader = new_leader
 
@@ -203,17 +197,17 @@ class MultiprocessReporterBase(BaseReporter):
                 # level...
                 self.debug_log.debug("Trying to find a better leader")
                 new_node = self._create_node(collecting_addresses=potential_addresses)
-                status = new_node.try_connecting_to_leader()
+                status = new_node.try_connecting_to_leader(ping_only=True)
                 if status is None:
                     ## some other leader exist with a higher order..
 
                     self.debug_log.info("Found a leader of a higher order. Switching to a node role")
                     with self.lock:
-                        self.node.close()
-                        self.node = new_node
-                        self.actual_role = ReportingRole.NODE_ROLE
+                        self.leader.reconnect_nodes()
                         self.leader.stop_leading()
                         self.leader = None
+                        self.actual_role = ReportingRole.NODE_ROLE
+
 
                     return
 

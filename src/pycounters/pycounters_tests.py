@@ -389,7 +389,7 @@ class MyTestCase(unittest.TestCase):
             node3.shutdown()
 
     def test_auto_server_upgrade_auto_role_simple(self):
-        debug_log = None #logging.getLogger("upgrade_auto")
+        debug_log = logging.getLogger("upgrade_auto")
         node1 = MultiprocessReporterBase(collecting_address=[("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         node2 = MultiprocessReporterBase(collecting_address=[("",5567),("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         try:
@@ -401,6 +401,7 @@ class MyTestCase(unittest.TestCase):
 
             node1.collecting_address=[("",5567),("",5568)]
             node1.leader.leading_level=1
+            node1.node.hosts_and_ports=node1.collecting_address
 
             node1._auto_upgrade_server_level_target(wait_time=10)
 
@@ -433,10 +434,16 @@ class MyTestCase(unittest.TestCase):
 
             node1.collecting_address=[("",7567),("",7568)]
             node1.leader.leading_level=1
+            node1.node.hosts_and_ports=node1.collecting_address
 
+
+            if debug_log:
+                debug_log.info("Upgrading leader level")
             node1._auto_upgrade_server_level_target(wait_time=10)
 
             sleep(0.5)
+            if debug_log:
+                debug_log.info("Checking node 1 became a node")
             self.assertEqual(node1.actual_role,ReportingRole.NODE_ROLE)
 
             with node2.lock: ## wait for node2 to stablize..

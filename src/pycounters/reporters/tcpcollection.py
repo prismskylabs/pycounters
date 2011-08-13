@@ -69,6 +69,12 @@ class CollectingNodeProxy(BaseRequestHandler):
         try:
             self.debug_log.debug("Handling an incoming registration request. Asking for node name.")
             node_id = self.receive()
+            if node_id == "ping":
+                self.debug_log.info("Got pinged.Acknowelding.")
+                self.send("ack")
+                self.close()
+                return
+
             self.debug_log.info("Connected to node %s" ,node_id)
             self.id = node_id
             self.leader.register_node_proxy(self)
@@ -183,6 +189,28 @@ class CollectingLeader(object):
 
         return None
 
+    def disconnect_nodes(self):
+        self._send_termination_msg("quit")
+
+    def reconnect_nodes(self):
+        self._send_termination_msg("reconnect")
+
+
+    def _send_termination_msg(self,msg):
+         with self.lock:
+            for node in self.node_proxies.itervalues():
+                try:
+                    node.send(msg)
+                except IOError as e:
+                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s,\nmsg:%s",node.id,e,msg)
+
+                try:
+                    node.close()
+                except:
+                    pass
+
+            self.node_proxies.clear()
+
 
     def stop_leading(self):
         if self.leading:
@@ -198,11 +226,22 @@ class CollectingLeader(object):
 
     def send_to_all_nodes(self,data):
         with self.lock:
-            for node in self.node_proxies:
+            error_nodes = []
+            for node in self.node_proxies.itervalues():
                 try:
                     node.send(data)
                 except IOError as e:
                     self.debug_log.exception("Get an error when sending to node %s:\nerror:%s,\ndata:%s",node.id,e,data)
+                    try:
+                        node.close()
+                    except:
+                        pass
+                    error_nodes.append(node.id)
+
+            for err_node in error_nodes:
+                self.debug_log.debug("Removing node %s from collection",err_node)
+                del self.node_proxies[err_node]
+
 
 
 
@@ -221,7 +260,7 @@ class CollectingLeader(object):
                     error_nodes.append(node.id)
 
             for err_node in error_nodes:
-                self.debug_log.debug("Removing node %s from collection",errnode)
+                self.debug_log.debug("Removing node %s from collection",err_node)
                 del self.node_proxies[err_node]
 
         return ret
@@ -264,7 +303,7 @@ class CollectingNode(object):
         id = _GLOBAL_COUNTER.next()
         return socket.getfqdn()+"_"+str(multiprocessing.current_process().ident)+"_"+str(id)
 
-    def try_connecting_to_leader(self,throw=False):
+    def try_connecting_to_leader(self,throw=False,ping_only=False):
         """ tries to find an elected leader on one of the give hosts and ports.
             Returns None on success or the last error message on failure
         """
@@ -291,9 +330,16 @@ class CollectingNode(object):
 
         self.rfile = self.socket.makefile('rb', 1)
         self.wfile = self.socket.makefile('wb', 1)
-        self.send(self.id)
+        if ping_only:
+            self.send("ping")
+        else:
+            self.send(self.id)
         if (self.receive()!="ack"):
+            self._close_socket()
             raise Exception("Failed to get ack from leader.")
+
+        if ping_only:
+            self._close_socket()
         return None
 
     def connect_to_leader(self,timeout_in_sec=120):
@@ -314,18 +360,18 @@ class CollectingNode(object):
 
 
         # if we got here things are bad..
-        raise Exception("Failed to ellect a leader. Tried %s times. Last node attempt error: %s." %
+        raise IOError("Failed to ellect a leader. Tried %s times. Last node attempt error: %s." %
                         (cur_itr,last_node_attempt_error)
                         )
 
     def start_background_receive(self):
         def target():
             try:
-                self.debug_log.debug('Cmd exec thread is running')
+                self.debug_log.debug('%s: Cmd exec thread is running',self.id)
                 self.execute_commands()
-                self.debug_log.debug('Cmd exec thread stoppinng')
+                self.debug_log.debug('%s: Cmd exec thread stoppinng',self.id)
             except Exception as e:
-                self.debug_log.exception("Cmd exec had an error (id:%s): %s\n,STACK TRACE: %s",self.id,e)
+                self.debug_log.exception("Cmd exec had an error (id:%s): %s",self.id,e)
 
         self.background_thread=threading.Thread(target=target)
         self.background_thread.daemon=True
@@ -343,9 +389,13 @@ class CollectingNode(object):
 
     def get_command_and_execute(self):
         cmd = self.receive()
-        self.debug_log.debug("Got %s", cmd)
+        self.debug_log.debug("%s: Got %s",self.id,cmd)
         if cmd=="quit":
             self.close()
+            return False
+        if cmd=="reconnect":
+            self._close_socket()
+            self.connect_to_leader()
             return False
         if cmd=="collect":
             self.debug_log.info("'%s': Collecting.",self.id)
@@ -382,6 +432,7 @@ class CollectingNode(object):
         except socket.error:
             pass #some platforms may raise ENOTCONN here
         self.socket.close()
+        self.socket = None
 
     def close(self):
         self.debug_log.info("%s: closing..",self.id)
