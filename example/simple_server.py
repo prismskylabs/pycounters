@@ -1,5 +1,5 @@
 import SocketServer
-from pycounters import shortcuts, reporters
+from pycounters import shortcuts, reporters, register_counter, counters, report_value
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -17,6 +17,10 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print "%s wrote:" % self.client_address[0]
         print self.data
+
+        # measure the average length of data
+        report_value("requests_data_len",len(self.data))
+
         # just send back the same data, but upper-cased
         self.request.send(self.data.upper())
 
@@ -24,6 +28,9 @@ if __name__ == "__main__":
     HOST, PORT = "localhost", 9999
     JSONFile = "/tmp/server.counters.json"
 
+    data_len_counter = counters.TotalCounter("requests_data_len") # create the counter
+    register_counter(data_len_counter) # register it, so it will start processing events
+        
     reporter = reporters.JSONFileReporter(output_file=JSONFile)
 
     reporter.start_auto_report()

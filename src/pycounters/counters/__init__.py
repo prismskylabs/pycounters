@@ -30,6 +30,30 @@ class EventCounter(TriggerMixin,BaseCounter):
         self.value = 0L
 
 
+class TotalCounter(AutoDispatch,BaseCounter):
+    """ Counts the total of events' values.
+    """
+
+    def __init__(self,name):
+        self.value = 0L
+        super(TotalCounter,self).__init__(name)
+
+
+    def _get_value(self):
+        return AccumulativeCounterValue(self.value);
+
+    def _report_event_value(self,name,value):
+
+        if self.value:
+            self.value += value
+        else:
+            self.value = long(value)
+
+
+    def _clear(self):
+        self.value = 0L
+
+
 class AverageWindowCounter(AutoDispatch,BaseCounter):
     """ Calculates a running average of arbitrary values """
 

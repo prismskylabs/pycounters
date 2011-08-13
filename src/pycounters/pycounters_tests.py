@@ -6,7 +6,7 @@ from pycounters import register_counter, report_start_end, unregister_counter
 import os
 import json
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER, CounterValueCollection
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import JSONFileReporter
 from pycounters.reporters.base import BaseReporter, ReportingRole, MultiprocessReporterBase
@@ -201,6 +201,15 @@ class MyTestCase(unittest.TestCase):
         self.assertEquals(test.get_value().value,1.0)
 
 
+    def test_total_counter(self):
+        test = TotalCounter("test")
+        test.report_event("test","value",1)
+        test.report_event("test","value",2)
+        self.assertEquals(test.get_value().value,3)
+
+        test.clear(dump=False)
+        test.report_event("test","value",1)
+        self.assertEquals(test.get_value().value,1)
 
 
     def test_basic_reporter(self):
@@ -389,7 +398,7 @@ class MyTestCase(unittest.TestCase):
             node3.shutdown()
 
     def test_auto_server_upgrade_auto_role_simple(self):
-        debug_log = logging.getLogger("upgrade_auto")
+        debug_log = None #logging.getLogger("upgrade_auto")
         node1 = MultiprocessReporterBase(collecting_address=[("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         node2 = MultiprocessReporterBase(collecting_address=[("",5567),("",5568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         try:
@@ -419,7 +428,7 @@ class MyTestCase(unittest.TestCase):
             node1.shutdown()
 
     def test_auto_server_upgrade_auto_role_switching_roles(self):
-        debug_log = logging.getLogger("upgrade_switch")
+        debug_log = None #logging.getLogger("upgrade_switch")
         node1 = MultiprocessReporterBase(collecting_address=[("",7568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         node2 = MultiprocessReporterBase(collecting_address=[("",7567),("",7568)],debug_log=debug_log,role=ReportingRole.AUTO_ROLE)
         try:

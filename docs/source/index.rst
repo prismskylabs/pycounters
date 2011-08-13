@@ -98,7 +98,7 @@ Easy install PyCounters to get it up and running: ::
 
     easy_install pycounters
 
-Take a look at the :ref:`getting_started` tutorial for more details.
+Take a look at the :ref:`tutorial` for more details.
 
 ----------------------------------
 Cool, but it would be great if ...
@@ -122,7 +122,7 @@ Further reading
 .. toctree::
    :maxdepth: 3
 
-   getting_started
+   tutorial
    moving_parts
    reference
    utilities

@@ -6,6 +6,8 @@ Object and function reference
 
 .. py:module:: pycounters
 
+.. _event_reporting:
+
 -----------------
 Event reporting
 -----------------
@@ -27,6 +29,10 @@ Counters
 
 
 .. autoclass:: EventCounter
+    :members:
+    :inherited-members:
+
+.. autoclass:: TotalCounter
     :members:
     :inherited-members:
 
@@ -54,6 +60,15 @@ Reporters
 
 
 .. autoclass:: JSONFileReporter
+    :members:
+    :inherited-members:
+
+
+.. autocalss:: MultiProcessLogReporter
+    :members:
+    :inherited-members:
+
+.. autocalss:: MultiProcessJSONFileReporter
     :members:
     :inherited-members:
 

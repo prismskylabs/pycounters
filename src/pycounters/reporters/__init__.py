@@ -29,3 +29,9 @@ class JSONFileReporter(JSONFileOutputMixin,BaseReporter):
 
 
 
+class MultiProcessJSONFileReporter(JSONFileOutputMixin,MultiprocessReporterBase):
+    """
+        Similar to JSONFileReporter, but supports collecting data from multiple processes.
+    """
+
+    pass

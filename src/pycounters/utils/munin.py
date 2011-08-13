@@ -10,17 +10,17 @@
 
     config = [
         {
-            "id" : "graph_id"
+            "id" : "graph_id",
             "global" : {
                 # graph global options: http://munin-monitoring.org/wiki/protocol-config
-                "title" : "Title"
-                "info"  : "Some info"
+                "title" : "Title",
+                "info"  : "Some info",
                 "category" : "PyCounters"
-            }
+            },
             "data" : [
                 {
-                    "counter" : "Somepycountername"
-                    "label"   : "A human redable form"
+                    "counter" : "Somepycountername",
+                    "label"   : "A human redable form",
                     "draw"    : "LINE2"
                 }
                 #...
