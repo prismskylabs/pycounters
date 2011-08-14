@@ -41,6 +41,41 @@ def _fprint(fmt,*args):
     print(fmt % args)
 
 class Plugin(object):
+    """
+    a small utility to write munin plugins based on the output of the JSONFile reporter
+
+    example usage (munin_plugin.py) : ::
+ 
+        #!/usr/bin/python
+
+        from pycounters.utils.munin import Plugin
+
+        config = [
+            {
+                "id" : "graph_id",
+                "global" : {
+                    # graph global options: http://munin-monitoring.org/wiki/protocol-config
+                    "title" : "Title",
+                    "info"  : "Some info",
+                    "category" : "PyCounters"
+                },
+                "data" : [
+                    {
+                        "counter" : "Somepycountername",
+                        "label"   : "A human redable form",
+                        "draw"    : "LINE2"
+                    }
+                    #...
+
+                ]
+            }
+        ]
+
+        p = Plugin("pycounters_output_file.json",config) # initialize the plugin
+
+        p.process_cmd() # process munin command and output requested data or config
+
+    """
 
     def __init__(self,json_output_file=None,config=None):
         self.output_file = json_output_file

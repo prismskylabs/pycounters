@@ -3,11 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=================
-PyCounters
-=================
+==========================================
+PyCounters - instrumenting production code
+==========================================
 
-PyCounters is a light weight library to monitor performance and events in production systems.
+A light weight library to monitor performance and events in production systems.
  
 -----------------
 Typical use cases
