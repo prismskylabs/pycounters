@@ -194,7 +194,7 @@ class MyTestCase(unittest.TestCase):
         test.report_event("test","value",2)
         self.assertEquals(test.get_value().value,1.5)
 
-        sleep(0.5)
+        sleep(0.7)
         self.assertEquals(test.get_value().value,0.0)
 
         test.report_event("test","value",1)
