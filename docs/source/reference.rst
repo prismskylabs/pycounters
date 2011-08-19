@@ -63,12 +63,11 @@ Reporters
     :members:
     :inherited-members:
 
-
-.. autocalss:: MultiProcessLogReporter
+.. autoclass:: MultiProcessLogReporter
     :members:
     :inherited-members:
 
-.. autocalss:: MultiProcessJSONFileReporter
+.. autoclass:: MultiProcessJSONFileReporter
     :members:
     :inherited-members:
 

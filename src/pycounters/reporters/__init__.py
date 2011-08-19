@@ -4,34 +4,39 @@ from .base import  BaseReporter, MultiprocessReporterBase, LogOutputMixin, JSONF
 __author__ = 'boaz'
 
 class LogReporter(LogOutputMixin,BaseReporter):
-    """ Log based reporter. Will report on demand (when LogReporter.report is called) or periodically
+    __doc__ = """ Log based reporter. Will report on demand (when LogReporter.report is called) or periodically
         (use LogReporter.start_auto_report)
-    """
+    """ + LogOutputMixin.__param_doc__
+
 
     pass
 
 
 class MultiProcessLogReporter(LogOutputMixin,MultiprocessReporterBase):
-    """
-        Similar to LogReporter, but supports collecting data from multiple processes.
-    """
+    __doc__ = """
+        Similar to :class:`LogReporter`, but supports collecting data from multiple processes.
+
+        
+    """ + LogOutputMixin.__param_doc__ + MultiprocessReporterBase.__param_doc__
 
     pass
 
 
 class JSONFileReporter(JSONFileOutputMixin,BaseReporter):
-    """
-        Reports to a file in a JSON format. The file name is indicated by the output_file keyword argument
-        to __init__
-    """
+    __doc__ = """
+        Reports to a file in a JSON format.
+    """ +  JSONFileOutputMixin.__param_doc__
+
+
+
 
     pass
 
 
 
 class MultiProcessJSONFileReporter(JSONFileOutputMixin,MultiprocessReporterBase):
-    """
-        Similar to JSONFileReporter, but supports collecting data from multiple processes.
-    """
+    __doc__ = """
+        Similar to :class:`JSONFileReporter`, but supports collecting data from multiple processes.
+    """+ JSONFileOutputMixin.__param_doc__ + MultiprocessReporterBase.__param_doc__
 
     pass

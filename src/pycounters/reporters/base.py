@@ -79,6 +79,22 @@ class MultiprocessReporterBase(BaseReporter):
 
     """
 
+    __param_doc__ = """
+
+        :param collecting_address: a tuple in the form of (server_name, port_number) for the different processes
+            to communicate on. One of the processes running on server_name will be elected to collect values from
+            all other processes. Processes not running on server_name will automatically connect to ones who do.
+
+            collecting_address can also be a list of tuples of the above format. In this case the connection would be
+            made on the first available address. In case the first address is not available, a periodical background
+            test will be made for it's availability. As soon as it becomes available the collecting will be moved. This
+            is useful for quick recycling of the monitored process as the main port previously used will not be
+            immediately available.
+
+            .. note: use an empty string "" as server_name for localhost.
+
+    """
+
 #        Some more info about how this works:
 #            - every instance of this class has two components a node and a leader
 #            - By default the instances auto elect an active leader upon start up or when the leader becomes
@@ -271,8 +287,13 @@ class MultiprocessReporterBase(BaseReporter):
 
 
 class LogOutputMixin(object):
-    """ a mixin to add outputing to a log. 
+    """ a mixin to add outputting to a log.
     """
+
+    __param_doc__ = """
+        :param output_log: a python log object to output reports to.
+    """
+
     def __init__(self,output_log=None,*args,**kwargs):
         """ output will be logged to output_log
         """
@@ -295,6 +316,11 @@ class JSONFileOutputMixin(object):
     """
         a mixin for output the collected reports to file in JSON format.
     """
+
+    __param_doc__ = """
+        :param output_file: a file name to which the reports will be written.
+    """
+
 
     def __init__(self,output_file=None,*args,**kwargs):
         """ output will be logged to output_log
