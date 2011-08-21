@@ -19,10 +19,8 @@ Of course, you can always checkout the code from BitBucket on https://bitbucket.
 Introduction
 ---------------------
 
-PyCounters is a library to help you collect interesting metrics from production code. The first to do when start using
-it is to think about what you actually want to collect.
-
-As an case study for this tutorial, we will use a simple Python-based server (taken from the `python docs
+PyCounters is a library to help you collect interesting metrics from production code. As an case study for
+this tutorial, we will use a simple Python-based server (taken from the `python docs
 <http://docs.python.org/library/socketserver.html#socketserver-tcpserver-example>`_): ::
 
     import SocketServer
@@ -64,10 +62,10 @@ For this basic server, we will add events to report the following metrics:
  * Average time for handling a request
 
 Both of these metrics are connected to the handle method of the MyTCPHandler class in the example.
-The number of requests per second the server serves is exactly the number of time the handle() method is called.
+The number of requests per second the server serves is exactly the number of times the handle() method is called.
 The average time for handling a request is exactly the average execution time of handle()
 
-Both of this metrics are measure by decorating handle() the :ref:`shortcut <shortcuts>` decorators
+Both of these metrics are measure by decorating handle() the :ref:`shortcut <shortcuts>` decorators
 :meth:`occurrence <pycounters.shortcuts.frequency>` and :meth:`occurrence <pycounters.shortcuts.time>`: ::
 
     import SocketServer
