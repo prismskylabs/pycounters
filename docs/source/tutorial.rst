@@ -95,7 +95,7 @@ Both of these metrics are measure by decorating handle() the :ref:`shortcut <sho
 Step 2 - Reporting
 ------------------------
 
-Now that the metrics are being collected they need to be reported. This is the job of the :ref:`reporters <reporters>`. In this example,
+Now that the metrics are being collected, they need to be reported. This is the job of the :ref:`reporters <reporters>`. In this example,
 we'll save a report every 5 minutes to a JSON file at /tmp/server.counters.json (check out the :ref:`reporters` section for other options).
 To do so, create an instance of :class:`JSONFileReporter <pycounters.reporters.JSONFileReporter>` when the server starts: ::
 
@@ -124,7 +124,7 @@ To do so, create an instance of :class:`JSONFileReporter <pycounters.reporters.J
     Reporters only report on demand (when their report() function is called). To make them report periodically you must call start_auto_report()
 
 By default auto reports are generated every 5 minutes (change that by using the seconds parameter of start_auto_report() ). After five minutes
-the reporter will save it's report. Here is an example: ::
+the reporter will save it's report. Here is an example of the contest of /tmp/server.counters.json: ::
 
     {"requests_time": 0.00039249658584594727, "requests_frequency": 0.014266581369872909}
 
@@ -164,14 +164,14 @@ average number of characters the server processes. To achieve this we can use an
 
 
 Until now, the shortcut decorators and functions were perfect for what we wanted to do. Naturally, this is not always
-the case. Before going on, it is handy to explain some more about these shortcuts and how PyCounters work (see
+the case. Before going on, it is handy to explain more about these shortcuts and how PyCounters work (see
 :ref:`moving_parts` for more about this).
 
 PyCounters is built of three main building blocks:
 
 * *Events* - to reports values and occurrences in your code (in the example: incoming request, the time it took to
     process them and the number of bytes the processed).
-* *Counters* - to capture events and analyse them (in the example: measuring request per second, averaging request
+* *Counters* - to capture events and analyse them (in the example: measuring requests per second, averaging request
   processing time and averaging the number of bytes processed per request).
 
 * *Reporters* - to periodically generate a report of all active counters.
@@ -185,7 +185,7 @@ your imports too). However, we will go another way about it.
 
 PyCounter's event reporting is very light weight. It practically does nothing if no counter is defined to capture those
 events. Because of this, it is a good idea to report all important events through the code and choose later what you
-exactly want analyzed. This means separation of event reporting and the definition of counters.
+exactly want analyzed. To do this we must separate th event reporting from the definition of counters.
 
 .. Note::
   This approach also means you can analyze things differently on a single thread, by installing thread specific
@@ -249,7 +249,7 @@ Step 4 - A complete example
 ---------------------------
 
 Here is the complete code with all the changes so far (also available at the PyCounters
-:ref:`repository <https://bitbucket.org/bleskes/pycounters>`: ::
+`repository <https://bitbucket.org/bleskes/pycounters>`_ ): ::
 
     import SocketServer
     from pycounters import shortcuts, reporters, register_counter, counters, report_value
@@ -300,11 +300,11 @@ Here is the complete code with all the changes so far (also available at the PyC
 Step 5 - Utilities
 ------------------------
 
-In the example so far, we've outputted the collected metrics to a JSON file. Using that JSON file one can easily build
+In the example so far, we've outputted the collected metrics to a JSON file. Using that JSON file, we can easily build
 simple tools to report the metrics further. The :ref:`pycounters.utils` package contains a set of utilities to help
 building such tools.
 
-At the moment, PyCounter comes with a utility to help writing :ref:`munin <http://munin-monitoring.org/>` plugins.
+At the moment, PyCounter comes with a utility to help writing `munin <http://munin-monitoring.org/>`_ plugins.
 Here is an example of a munin plugin that taks the JSON report procude by the Tutorial and presents it in the way
 munin understands: ::
 
