@@ -151,7 +151,7 @@ class CollectingLeader(object):
             try:
                 self.tcp_server = ExplicitRequestClosingTCPServer(self.hosts_and_ports[potential_level],
                                                         self.make_stream_request_handler,bind_and_activate=False)
-                self.allow_reuse_address = True
+#                self.allow_reuse_address = True
                 try:
                     self.tcp_server.server_bind()
                     self.tcp_server.server_activate()
