@@ -301,7 +301,7 @@ Step 5 - Utilities
 ------------------------
 
 In the example so far, we've outputted the collected metrics to a JSON file. Using that JSON file, we can easily build
-simple tools to report the metrics further. The :ref:`pycounters.utils` package contains a set of utilities to help
+simple tools to report the metrics further. The :ref:`pycounters_utils` package contains a set of utilities to help
 building such tools.
 
 At the moment, PyCounter comes with a utility to help writing `munin <http://munin-monitoring.org/>`_ plugins.
