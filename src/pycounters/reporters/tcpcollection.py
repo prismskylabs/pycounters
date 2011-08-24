@@ -301,7 +301,7 @@ class CollectingNode(object):
 
     def gen_id(self):
         id = _GLOBAL_COUNTER.next()
-        return socket.getfqdn()+"_"+str(multiprocessing.current_process().ident)+"_"+str(id)
+        return socket.getfqdn()+"_"+str(multiprocessing.current_process().ident)+"_"+str(id)+"_"+str(time.time())
 
     def try_connecting_to_leader(self,throw=False,ping_only=False):
         """ tries to find an elected leader on one of the give hosts and ports.
@@ -311,17 +311,19 @@ class CollectingNode(object):
         self.socket = None
 
         for host_port_index in range(len(self.hosts_and_ports)):
+            cur_host_port = self.hosts_and_ports[host_port_index]
             try:
+                self.debug_log.debug("%s: Trying to connect to a lader on %s.",self.id,cur_host_port)
                 candidate_socket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 candidate_socket.settimeout(None)
-                candidate_socket.connect(self.hosts_and_ports[host_port_index])
+                candidate_socket.connect(cur_host_port)
 
                 self.socket=candidate_socket
                 break # success!
 
             except  IOError as e:
                 self.debug_log.warning("%s: Failed to find leader on %s . Error: %s",self.id,
-                                       self.hosts_and_ports[host_port_index],e)
+                                       cur_host_port,e)
                 if host_port_index == len(self.hosts_and_ports)-1:
                     self.socket = None
                     if throw:
