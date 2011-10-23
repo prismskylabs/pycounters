@@ -22,3 +22,5 @@ testing/*.egg-info
 .idea
 docs/html
 docs/doctrees
+docs/Makefile
+docs/make.bat
