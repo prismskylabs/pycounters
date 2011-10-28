@@ -10,8 +10,8 @@ class EventCatcher(object):
     def create_listener(self,event_store):
         class listener(BaseListener):
 
-            def _report_event(self, name, property, param):
-                event_store.event_store.append((name, property, param))
+            def report_event(self, name, property, param):
+                event_store.append((name, property, param))
 
         return listener()
 
@@ -21,5 +21,5 @@ class EventCatcher(object):
         self.event_trace = self.create_listener(self.event_store)
         THREAD_DISPATCHER.add_listener(self.event_trace)
 
-    def __exit__(self,*args):
+    def __exit__(self,exc_type, exc_value, traceback):
         THREAD_DISPATCHER.remove_listener(self.event_trace)

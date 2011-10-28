@@ -1,4 +1,4 @@
-from django.test import TestCase
+from unittest import TestCase
 from . import EventCatcher
 from pycounters.utils import patcher
 

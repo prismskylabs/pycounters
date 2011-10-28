@@ -1,3 +1,6 @@
+0.4:
+    - added a patcher util class to allow injecting events to existing libraries/code.
+
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.
 
