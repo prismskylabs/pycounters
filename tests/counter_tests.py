@@ -9,6 +9,7 @@ from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, Avera
 from pycounters.reporters import JSONFileReporter
 from pycounters.reporters.base import BaseReporter
 from pycounters.shortcuts import count, value, frequency, time
+from . import EventCatcher
 
 
 class FakeThreadLocalTimer(ThreadLocalTimer):
@@ -31,20 +32,6 @@ class FakeTimer(Timer):
         else:
             self.curtime = 0
         return self.curtime
-
-
-class EventTrace(BaseCounter):
-
-    def __init__(self, *args, **kwargs):
-        self.value = []
-        super(EventTrace, self).__init__(*args, **kwargs)
-
-    def _report_event(self, name, property, param):
-        self.value.append((name, property, param))
-
-    def _get_value(self):
-        return self.value
-
 
 class CounterTests(unittest.TestCase):
     def test_ThreadTimeCategorizer(self):
@@ -72,36 +59,39 @@ class CounterTests(unittest.TestCase):
 
             f()
 
-            c = EventTrace("c")
-            THREAD_DISPATCHER.add_listener(c)
-            try:
+            events = []
+            with EventCatcher(events):
                 tc.raise_value_events()
-                self.assertEqual(c.get_value(),
-                    [
-                        ("tc.cat1", "value", 2.0),
-                        ("tc.cat2", "value", 1.0),
-                        ("tc.f", "value", 4.0),
-                    ]
-                )
-            finally:
-                THREAD_DISPATCHER.remove_listener(c)
+
+            self.assertEqual(events,
+                [
+                    ("tc.cat1", "value", 2.0),
+                    ("tc.cat2", "value", 1.0),
+                    ("tc.f", "value", 4.0),
+                ]
+            )
 
         finally:
             THREAD_DISPATCHER.remove_listener(tc)
 
     def test_ValueAccumulator(self):
-        c = EventTrace("c")
-        ac = ValueAccumulator(name="ac")
-        THREAD_DISPATCHER.add_listener(ac)
-        THREAD_DISPATCHER.add_listener(c)
-        try:
-            value("s1", 1, auto_add_counter=False)
-            value("s1", 2, auto_add_counter=False)
-            value("s2", 5, auto_add_counter=False)
 
-            ac.raise_value_events()
+        events = []
+        with EventCatcher(events):
+            ac = ValueAccumulator(name="ac")
+            THREAD_DISPATCHER.add_listener(ac)
 
-            self.assertEqual(c.get_value(),
+            try:
+                value("s1", 1, auto_add_counter=False)
+                value("s1", 2, auto_add_counter=False)
+                value("s2", 5, auto_add_counter=False)
+
+                ac.raise_value_events()
+
+            finally:
+                THREAD_DISPATCHER.remove_listener(ac)
+
+        self.assertEqual(events,
                 [
                     ("s1", "value", 1),
                     ("s1", "value", 2),
@@ -110,9 +100,6 @@ class CounterTests(unittest.TestCase):
                     ("ac.s1", "value", 3),
                 ]
             )
-        finally:
-            THREAD_DISPATCHER.remove_listener(ac)
-            THREAD_DISPATCHER.remove_listener(c)
 
     def test_Thread_Timer(self):
         f = FakeThreadLocalTimer()
