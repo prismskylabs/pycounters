@@ -325,7 +325,9 @@ class BaseReporter(object):
 
     def output_values(self,counter_values):
         """ the main method of a reporter. The method should output counter_values (a dictionary)
-            to whatever output target of the reporter
+            to whatever output target of the reporter.
+
+            counter_values: a dictionary values are stored by counter names.
         """
         raise NotImplementedError("Implement output_values in a subclass.")
 
