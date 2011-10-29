@@ -4,35 +4,34 @@ from time import sleep
 
 from pycounters.base import CounterValueCollection
 from pycounters.counters.base import AccumulativeCounterValue
-from pycounters.reporters.base import ReportingRole, MultiprocessReporterBase
+from pycounters.reporters.base import CollectingRole, MultiProcessCounterValueCollector
 from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
 
 
 class CollectorTests(unittest.TestCase):
     def test_basic_collections(self):
         debug_log = None  # logging.getLogger("collection")
-        vals = {}
+
 
         def make_node(val):
-            class fake_node(MultiprocessReporterBase):
+            class fake_node(MultiProcessCounterValueCollector):
                 def node_get_values(self):
                     c = CounterValueCollection()
                     c["val"] = AccumulativeCounterValue(val)
                     return c
 
-                def _output_report(self, counter_values_col):
-                    vals.update(counter_values_col)
+
 
             return  fake_node
 
         # first define leader so people have things to connect to.
-        leader = make_node(4)(collecting_address=("", 60907), debug_log=debug_log, role=ReportingRole.LEADER_ROLE)
+        leader = make_node(4)(collecting_address=("", 60907), debug_log=debug_log, role=CollectingRole.LEADER_ROLE)
 
         try:
-            node1 = make_node(1)(collecting_address=("", 60907), debug_log=debug_log, role=ReportingRole.NODE_ROLE)
-            node2 = make_node(2)(collecting_address=("", 60907), debug_log=debug_log, role=ReportingRole.NODE_ROLE)
-            node3 = make_node(3)(collecting_address=("", 60907), debug_log=debug_log, role=ReportingRole.NODE_ROLE)
-            leader.report()
+            node1 = make_node(1)(collecting_address=("", 60907), debug_log=debug_log, role=CollectingRole.NODE_ROLE)
+            node2 = make_node(2)(collecting_address=("", 60907), debug_log=debug_log, role=CollectingRole.NODE_ROLE)
+            node3 = make_node(3)(collecting_address=("", 60907), debug_log=debug_log, role=CollectingRole.NODE_ROLE)
+            vals = leader.get_values()
             self.assertEqual(vals["val"], 1 + 2 + 3 + 4)
 
             self.assertEqual(sorted([r["val"] for r in vals["__node_reports__"].values()]),
@@ -93,13 +92,16 @@ class CollectorTests(unittest.TestCase):
 
     def test_auto_reelection(self):
         debug_log = None  # logging.getLogger("reelection")
-        node1 = MultiprocessReporterBase(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
-        node2 = MultiprocessReporterBase(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
-        node3 = MultiprocessReporterBase(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
+        node1 = MultiProcessCounterValueCollector(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log,
+                    role=CollectingRole.AUTO_ROLE)
+        node2 = MultiProcessCounterValueCollector(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log,
+                    role=CollectingRole.AUTO_ROLE)
+        node3 = MultiProcessCounterValueCollector(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log,
+                    role=CollectingRole.AUTO_ROLE)
         try:
-            self.assertEqual(node1.actual_role, ReportingRole.LEADER_ROLE)
-            self.assertEqual(node2.actual_role, ReportingRole.NODE_ROLE)
-            self.assertEqual(node3.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node1.actual_role, CollectingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)
+            self.assertEqual(node3.actual_role, CollectingRole.NODE_ROLE)
             if debug_log:
                 debug_log.info("Shutting down leader")
 
@@ -126,11 +128,13 @@ class CollectorTests(unittest.TestCase):
 
     def test_auto_server_upgrade_auto_role_simple(self):
         debug_log = None #logging.getLogger("upgrade_auto")
-        node1 = MultiprocessReporterBase(collecting_address=[("", 5568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
-        node2 = MultiprocessReporterBase(collecting_address=[("", 5567), ("", 5568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
+        node1 = MultiProcessCounterValueCollector(collecting_address=[("", 5568)], debug_log=debug_log,
+            role=CollectingRole.AUTO_ROLE)
+        node2 = MultiProcessCounterValueCollector(collecting_address=[("", 5567), ("", 5568)], debug_log=debug_log,
+            role=CollectingRole.AUTO_ROLE)
         try:
-            self.assertEqual(node1.actual_role, ReportingRole.LEADER_ROLE)
-            self.assertEqual(node2.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node1.actual_role, CollectingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)
 
             if debug_log:
                 debug_log.info("Telling the leader it's on a lower level")
@@ -147,21 +151,24 @@ class CollectorTests(unittest.TestCase):
             with node2.lock: ## wait for node2 to stablize..
                 pass
 
-            self.assertEqual(node2.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)
         finally:
             node2.shutdown()
             node1.shutdown()
 
     def test_auto_server_upgrade_auto_role_switching_roles(self):
         debug_log = None #logging.getLogger("upgrade_switch")
-        node1 = MultiprocessReporterBase(collecting_address=[("", 7568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
-        node2 = MultiprocessReporterBase(collecting_address=[("", 7567), ("", 7568)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
+        node1 = MultiProcessCounterValueCollector(collecting_address=[("", 7568)], debug_log=debug_log,
+                    role=CollectingRole.AUTO_ROLE)
+        node2 = MultiProcessCounterValueCollector(collecting_address=[("", 7567), ("", 7568)], debug_log=debug_log,
+                    role=CollectingRole.AUTO_ROLE)
         try:
-            self.assertEqual(node1.actual_role, ReportingRole.LEADER_ROLE)
-            self.assertEqual(node2.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node1.actual_role, CollectingRole.LEADER_ROLE)
+            self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)
 
-            node3 = MultiprocessReporterBase(collecting_address=[("", 7567)], debug_log=debug_log, role=ReportingRole.AUTO_ROLE)
-            self.assertEqual(node3.actual_role, ReportingRole.LEADER_ROLE)
+            node3 = MultiProcessCounterValueCollector(collecting_address=[("", 7567)], debug_log=debug_log,
+                role=CollectingRole.AUTO_ROLE)
+            self.assertEqual(node3.actual_role, CollectingRole.LEADER_ROLE)
 
             if debug_log:
                 debug_log.info("Telling the leader it's on a lower level")
@@ -177,12 +184,12 @@ class CollectorTests(unittest.TestCase):
             sleep(0.5)
             if debug_log:
                 debug_log.info("Checking node 1 became a node")
-            self.assertEqual(node1.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node1.actual_role, CollectingRole.NODE_ROLE)
 
             with node2.lock: ## wait for node2 to stablize..
                 pass
 
-            self.assertEqual(node2.actual_role, ReportingRole.NODE_ROLE)
+            self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)
 
         finally:
             node2.shutdown()

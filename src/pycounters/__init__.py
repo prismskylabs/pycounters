@@ -7,9 +7,8 @@ Use PyCounters to get high level and concise overview of what's going on in your
 See #### (read the docs) for more information
 
 """
-import base
 from shortcuts import _make_reporting_decorator
-
+from . import reporters,base
 
 def report_start(name):
     """ reports an event's start.
@@ -47,3 +46,36 @@ def unregister_counter(counter=None,name=None):
     """ Removes a previously registered counter
     """
     base.GLOBAL_REGISTRY.remove_counter(counter=counter,name=name)
+
+
+def start_auto_reporting(seconds=300):
+    """
+    Start reporting in a background thread. Reporting frequency is set by seconds param.
+    """
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.start_auto_report(seconds=seconds)
+
+def stop_auto_reporting():
+    """ Stop auto reporting """
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.stop_auto_report()
+
+def register_reporter(reporter=None):
+    """
+        add a reporter to PyCounters. Registered reporters will output collected metrics
+    """
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.register_reporter(reporter)
+
+
+def unregister_reporter(reporter=None):
+    """
+        remove a reporter from PyCounters.
+    """
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.unregister_reporter(reporter)
+
+
+def configure_multi_process_collection(collecting_address=[("",60907),("",60906)],timeout_in_sec=120):
+    """
+      configures PyCounters to collect values from multiple processes
+    """
+
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.configure_multi_process(collecting_address=collecting_address,
+        timeout_in_sec=timeout_in_sec)
