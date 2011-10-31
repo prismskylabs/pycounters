@@ -1,3 +1,4 @@
+import logging
 import unittest
 import threading
 from time import sleep
@@ -91,7 +92,7 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual(sorted(statuses), [False, False, True])
 
     def test_auto_reelection(self):
-        debug_log = None  # logging.getLogger("reelection")
+        debug_log = None #logging.getLogger("reelection")
         node1 = MultiProcessCounterValueCollector(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log,
                     role=CollectingRole.AUTO_ROLE)
         node2 = MultiProcessCounterValueCollector(collecting_address=[("", 4567), ("", 4568)], debug_log=debug_log,

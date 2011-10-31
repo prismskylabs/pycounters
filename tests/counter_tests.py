@@ -2,7 +2,7 @@ import os
 import unittest
 from time import sleep
 
-from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter
+from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
@@ -199,7 +199,7 @@ class CounterTests(unittest.TestCase):
             sleep(0.05)
             self.assertEqual(v.last_values, {"test1": 3})
 
-            v.stop_auto_report()
+            stop_auto_reporting()
             test1.report_event("test1", "value", 1)
             sleep(0.05)
             self.assertEqual(v.last_values, {"test1": 3})
