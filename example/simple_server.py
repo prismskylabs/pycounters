@@ -1,5 +1,5 @@
 import SocketServer
-from pycounters import shortcuts, reporters, register_counter, counters, report_value
+from pycounters import shortcuts, reporters, register_counter, counters, report_value, register_reporter, start_auto_reporting
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -33,7 +33,9 @@ if __name__ == "__main__":
         
     reporter = reporters.JSONFileReporter(output_file=JSONFile)
 
-    reporter.start_auto_report()
+    register_reporter(reporter)
+
+    start_auto_reporting()
 
 
     # Create the server, binding to localhost on port 9999
