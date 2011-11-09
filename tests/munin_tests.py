@@ -1,9 +1,10 @@
 import os
 import unittest
 
-from pycounters import register_counter, unregister_counter
+from pycounters import register_counter, unregister_counter, register_reporter, unregister_reporter
 from pycounters.counters import EventCounter
 from pycounters.reporters import JSONFileReporter
+from pycounters.reporters.base import GLOBAL_REPORTING_CONTROLLER
 from pycounters.utils import munin
 
 
@@ -39,12 +40,14 @@ class MuninTests(unittest.TestCase):
             output.pop()
 
         jsfr = JSONFileReporter(output_file=filename)
+        register_reporter(jsfr)
         test1 = EventCounter("test1")
         register_counter(test1)
+
         try:
             test1.report_event("test1", "value", 2)
 
-            jsfr.report()
+            GLOBAL_REPORTING_CONTROLLER.report()
 
             plugin.output_data(cfg)
             self.assertEqual(output, ["multigraph test", "test1.value 2"])
@@ -52,3 +55,4 @@ class MuninTests(unittest.TestCase):
             os.unlink(filename)
         finally:
             unregister_counter(counter=test1)
+            unregister_reporter(jsfr)

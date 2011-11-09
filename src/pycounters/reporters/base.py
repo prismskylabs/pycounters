@@ -4,82 +4,30 @@ import time
 import os
 import json
 import fcntl
-from pycounters.base import GLOBAL_REGISTRY, CounterValueCollection
+from ..base import GLOBAL_REGISTRY, CounterValueCollection
 from . import tcpcollection
+import pycounters
 
 __author__ = 'boaz'
 
 
-class BaseReporter(object):
+class CounterValuesCollector(object):
+    """
+        a utility class to retrieve Counter Values. Basic functionality is very simple. This class is
+        a place holder for more complex functionality.
+    """
 
+    def get_values(self):
+        return GLOBAL_REGISTRY.get_values().values
 
-    def __init__(self,*args,**kwargs):
-        self._auto_reporting_cycle = None
-        self._auto_reporting_active = threading.Event()
-        self._auto_reporting_thread = threading.Thread(target=self._auto_reporting_thread_target)
-        self._auto_reporting_thread.daemon = True
-        self._auto_reporting_thread.start()
-
-    def report(self):
-        """ Collects a report from the counters and outputs it
-        """
-        values_col = GLOBAL_REGISTRY.get_values()
-        self._output_report(values_col.values)
-
-    def _output_report(self,counter_values):
-         # raise NotImplementedError("Implement _output_report in a subclass.")
-        pass
-
-    def start_auto_report(self,seconds=300):
-        """
-        Start reporting in a background thread. Reporting frequency is set by seconds param.
-        """
-        self._auto_reporting_cycle = float(seconds)
-        self._auto_reporting_active.set()
-
-    def stop_auto_report(self):
-        """ Stop auto reporting """
-        self._auto_reporting_active.clear()
-
-
-    def _handle_background_error(self,e):
-        """ is called by backround reporting thread on error. It is highly recommended to implement this """
-        pass
-
-    def _auto_reporting_thread_target(self):
-        def new_wait():
-            self._auto_reporting_active.wait()
-            return True
-        while new_wait():
-            try:
-                self.report()
-            except Exception as e:
-                try:
-                    self._handle_background_error(e)
-                except:
-                    pass
-
-            time.sleep(self._auto_reporting_cycle)
-
-
-
-class ReportingRole(object):
+class CollectingRole(object):
     LEADER_ROLE = 0
     NODE_ROLE = 1
     AUTO_ROLE = 2
 
-
-class MultiprocessReporterBase(BaseReporter):
+class MultiProcessCounterValueCollector(CounterValuesCollector):
     """
-        A base class to multiprocess aware reporter.
-
-        Reporters inheriting from this base class need to implement _output_report. The values collection
-        given to this function contains the aggregated value collection. Original per node values are
-        stored under the __original__ key.
-
-    """
-
-    __param_doc__ = """
+      a utility class to collect and merge reports from multiple process.
 
         :param collecting_address: a tuple in the form of (server_name, port_number) for the different processes
             to communicate on. One of the processes running on server_name will be elected to collect values from
@@ -104,26 +52,23 @@ class MultiprocessReporterBase(BaseReporter):
 #            - The leader merges it and output it.
 
 
-
-    def __init__(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=ReportingRole.AUTO_ROLE,
-                 timeout_in_sec=120,*args,**kwargs):
-        """
-            collecting_address = address of the machine data should be collected on.
-            collecing_port = port of collecting process
-            role = role of current process, set to AUTO for auto leader election
-        """
-        super(MultiprocessReporterBase,self).__init__(*args,**kwargs)
-        self.debug_log= debug_log if debug_log else tcpcollection._noplogger()
-        self.lock = threading.RLock()
-        self.collecting_address=tcpcollection.normalize_hosts_and_ports(collecting_address)
-        self.leader =None
-        self.node = None
-        self.role = role
-        self.actual_role = self.role
-        self.timeout_in_sec=timeout_in_sec
-
-        self.init_role()
-
+    def __init__(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=CollectingRole.AUTO_ROLE,
+                             timeout_in_sec=120):
+            """
+                collecting_address = address of the machine data should be collected on.
+                collecing_port = port of collecting process
+                role = role of current process, set to AUTO for auto leader election
+            """
+            super(CounterValuesCollector,self).__init__()
+            self.debug_log= debug_log if debug_log else tcpcollection._noplogger()
+            self.lock = threading.RLock()
+            self.collecting_address=tcpcollection.normalize_hosts_and_ports(collecting_address)
+            self.leader =None
+            self.node = None
+            self.role = role
+            self.actual_role = self.role
+            self.timeout_in_sec=timeout_in_sec
+            self.init_role()
 
     def _create_leader(self,collecting_addresses=None):
         if collecting_addresses is None:
@@ -143,17 +88,17 @@ class MultiprocessReporterBase(BaseReporter):
         with self.lock:
             self.actual_role = None # mark things as unknown...
 
-            if self.role == ReportingRole.LEADER_ROLE:
+            if self.role == CollectingRole.LEADER_ROLE:
                 self.leader= self._create_leader()
                 self.leader.try_to_lead(throw=True)
-                self.actual_role = ReportingRole.LEADER_ROLE
+                self.actual_role = CollectingRole.LEADER_ROLE
                 self.node = self._create_node() ## create node for this process
                 self.node.connect_to_leader()
-            elif self.role == ReportingRole.NODE_ROLE:
+            elif self.role == CollectingRole.NODE_ROLE:
                 self.node = self._create_node()
                 self.node.connect_to_leader(timeout_in_sec=self.timeout_in_sec)
-                self.actual_role = ReportingRole.NODE_ROLE
-            elif self.role == ReportingRole.AUTO_ROLE:
+                self.actual_role = CollectingRole.NODE_ROLE
+            elif self.role == CollectingRole.AUTO_ROLE:
                 self.node = self._create_node()
                 self.leader= self._create_leader()
                 self.debug_log.info("Role is set to auto. Electing a leader.")
@@ -161,14 +106,14 @@ class MultiprocessReporterBase(BaseReporter):
                     tcpcollection.elect_leader(self.node, self.leader, timeout_in_sec=self.timeout_in_sec)
 
                 if status:
-                    self.actual_role = ReportingRole.LEADER_ROLE
+                    self.actual_role = CollectingRole.LEADER_ROLE
                     self.node.connect_to_leader() ## node for current process.
                 else:
-                    self.actual_role = ReportingRole.NODE_ROLE
+                    self.actual_role = CollectingRole.NODE_ROLE
 
                 self.debug_log.info("Leader elected. My Role is: %s", self.actual_role)
 
-            if self.actual_role == ReportingRole.LEADER_ROLE:
+            if self.actual_role == CollectingRole.LEADER_ROLE:
 
 
                 if self.leader.leading_level >0 :
@@ -177,7 +122,7 @@ class MultiprocessReporterBase(BaseReporter):
                     upgrading_thread=threading.Thread(target=self._auto_upgrade_server_level_target)
                     upgrading_thread.daemon=True
                     upgrading_thread.start()
-                    
+
 
     def _try_upgrading_leader(self,potential_addresses):
         self.debug_log.debug("Trying to upgrade leadership")
@@ -201,14 +146,14 @@ class MultiprocessReporterBase(BaseReporter):
         """ a target function for upgrading server level, if it happens to be too high..
         """
         while True:
-            if self.actual_role != ReportingRole.LEADER_ROLE or self.leader.leading_level==0:
+            if self.actual_role != CollectingRole.LEADER_ROLE or self.leader.leading_level==0:
                 self.debug_log.info("server upgrading stopped - I'm not a leader or leading level is 0")
                 return
 
             potential_addresses = self.collecting_address[:self.leader.leading_level]
 
 
-            if self.role == ReportingRole.AUTO_ROLE:
+            if self.role == CollectingRole.AUTO_ROLE:
                 # node is in auto_role... first figure out if the is some other leading available with a better
                 # level...
                 self.debug_log.debug("Trying to find a better leader")
@@ -222,7 +167,7 @@ class MultiprocessReporterBase(BaseReporter):
                         self.leader.reconnect_nodes()
                         self.leader.stop_leading()
                         self.leader = None
-                        self.actual_role = ReportingRole.NODE_ROLE
+                        self.actual_role = CollectingRole.NODE_ROLE
 
 
                     return
@@ -240,14 +185,16 @@ class MultiprocessReporterBase(BaseReporter):
             time.sleep(wait_time)
 
 
-    def report(self):
-        """ outputs a report on leader process. O.w. a no-op
+    def get_values(self):
+        """ collects values a report on leader process. O.w. a no-op
         """
-        if self.actual_role == ReportingRole.LEADER_ROLE:
+        if self.actual_role == CollectingRole.LEADER_ROLE:
             with self.lock:
                 values = self.leader_collect_values()
                 merged_values = self.merge_values(values)
-                self._output_report(merged_values)
+                return merged_values
+
+        return None # not a leader. Life sucks.
 
 
     def merge_values(self,values):
@@ -286,100 +233,106 @@ class MultiprocessReporterBase(BaseReporter):
                 self.leader=None
 
 
-class LogOutputMixin(object):
-    """ a mixin to add outputting to a log.
+class ReportingController(object):
+    """
+      a class to organize and coordinate reporters. Acts as a bridge between the registered
+      counters and all reporters. This central bridge is needed to minimize the performance impact
+      of outputing to multiple targets.
     """
 
-    __param_doc__ = """
-        :param output_log: a python log object to output reports to.
-    """
+    def __init__(self):
+        super(ReportingController,self).__init__()
+        self.lock = threading.RLock()
+        self.reporters_registry=set()
+        self.collector = CounterValuesCollector()
 
-    def __init__(self,output_log=None,*args,**kwargs):
-        """ output will be logged to output_log
+
+        self._auto_reporting_cycle = None
+        self._auto_reporting_active = threading.Event()
+        self._auto_reporting_thread = threading.Thread(target=self._auto_reporting_thread_target)
+        self._auto_reporting_thread.daemon = True
+        self._auto_reporting_thread.start()
+
+
+    def configure_multi_process(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=CollectingRole.AUTO_ROLE,
+                             timeout_in_sec=120):
         """
-        super(LogOutputMixin,self).__init__(*args,**kwargs)
-        self.logger = output_log
+           setup reporting for a multi process scenario
+        """
+        self.collector=MultiProcessCounterValueCollector(collecting_address=collecting_address,debug_log=debug_log,
+                        role=CollectingRole.AUTO_ROLE,timeout_in_sec=120)
+
+
+    def register_reporter(self,reporter):
+        with self.lock:
+            self.reporters_registry.add(reporter)
+
+    def unregister_reporter(self,reporter):
+        with self.lock:
+            self.reporters_registry.remove(reporter)
+
+
+    def report(self):
+        """ Collects a report from the counters and outputs it
+        """
+        values = self.collector.get_values()
+        if values is None:
+            return # collector decided to abort things
+        with self.lock:
+            for reporter in self.reporters_registry:
+                reporter.output_values(values)
+
+
+
+    def start_auto_report(self,seconds=300):
+        """
+        Start reporting in a background thread. Reporting frequency is set by seconds param.
+        """
+        self._auto_reporting_cycle = float(seconds)
+        self._auto_reporting_active.set()
+
+    def stop_auto_report(self):
+        """ Stop auto reporting """
+        self._auto_reporting_active.clear()
+
 
     def _handle_background_error(self,e):
-        self.logger.exception(e)
+        """ is called by backround reporting thread on error. """
+        pass
 
-    def _output_report(self,counter_values):
-        super(LogOutputMixin,self)._output_report(counter_values) ## behave nice with other mixins
-        logs = sorted(counter_values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
-
-        for k,v in logs:
-            if not (k.startswith("__") and k.endswith("__")): ## don't output __node_reports__ etc.
-                self.logger.info("%s %s",k,v)
-
-
-class JSONFileOutputMixin(object):
-    """
-        a mixin for output the collected reports to file in JSON format.
-    """
-
-    __param_doc__ = """
-        :param output_file: a file name to which the reports will be written.
-    """
-
-
-    def __init__(self,output_file=None,*args,**kwargs):
-        """ output will be logged to output_log
-        """
-        super(JSONFileOutputMixin,self).__init__(*args,**kwargs)
-        self.output_file = output_file
-        ## try to open the file now, just to see if it is possible and raise an exception if not
-        self._output_report({"__initializing__" : True})
-
-
-    def _output_report(self,counter_values):
-        super(JSONFileOutputMixin,self)._output_report(counter_values) ## behave nice with other mixins
-        JSONFileOutputMixin.safe_write(counter_values,self.output_file)
-
-
-    @staticmethod
-    def _lockfile(file):
-        try:
-            fcntl.flock(file, fcntl.LOCK_EX)
+    def _auto_reporting_thread_target(self):
+        def new_wait():
+            self._auto_reporting_active.wait()
             return True
-        except IOError, exc_value:
-        #  IOError: [Errno 11] Resource temporarily unavailable
-            if exc_value[0] == 11 or exc_value[0] == 35:
-                return False
-            else:
-                raise
+        while new_wait():
+            try:
+                self.report()
+            except Exception as e:
+                try:
+                    self._handle_background_error(e)
+                except:
+                    pass
 
-    @staticmethod
-    def _unlockfile(file):
-        fcntl.flock(file, fcntl.LOCK_UN)
+            time.sleep(self._auto_reporting_cycle)
 
-    @staticmethod
-    def safe_write(value,filename):
-        """ safely writes value in a JSON format to file
+
+GLOBAL_REPORTING_CONTROLLER= ReportingController()
+
+
+
+class BaseReporter(object):
+
+
+    def output_values(self,counter_values):
+        """ the main method of a reporter. The method should output counter_values (a dictionary)
+            to whatever output target of the reporter.
+
+            counter_values: a dictionary values are stored by counter names.
         """
-        fd=os.open(filename,os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
-        JSONFileOutputMixin._lockfile(fd)
-        try:
-
-            file=os.fdopen(fd,"w")
-            json.dump(value,file)
-        finally:
-            JSONFileOutputMixin._unlockfile(fd)
-            file.close()
-        # fd is now close by the with clause
+        raise NotImplementedError("Implement output_values in a subclass.")
 
 
-    @staticmethod
-    def safe_read(filename):
-       """ safely reads a value in a JSON format frome file
-       """
-       fd=os.open(filename,os.O_RDONLY)
-       JSONFileOutputMixin._lockfile(fd)
-       try:
-           file=os.fdopen(fd,"r")
-           return json.load(file)
-       finally:
-           JSONFileOutputMixin._unlockfile(fd)
-           file.close()
 
-        # fd is now close by the with clause
+
+
 

@@ -2,12 +2,12 @@ import os
 import unittest
 from time import sleep
 
-from pycounters import register_counter, report_start_end, unregister_counter
+from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import JSONFileReporter
-from pycounters.reporters.base import BaseReporter
+from pycounters.reporters.base import BaseReporter, GLOBAL_REPORTING_CONTROLLER
 from pycounters.shortcuts import count, value, frequency, time
 from . import EventCatcher
 
@@ -178,14 +178,16 @@ class CounterTests(unittest.TestCase):
 
     def test_basic_reporter(self):
         class ValueReporter(BaseReporter):
-            def _output_report(self, counter_values):
+            def output_values(self,counter_values):
                 self.last_values = counter_values
-
-        v = ValueReporter()
-        v.start_auto_report(0.01)
 
         test1 = EventCounter("test1")
         register_counter(test1)
+
+        v = ValueReporter()
+        register_reporter(v)
+        start_auto_reporting(0.01)
+
 
         try:
             test1.report_event("test1", "value", 2)
@@ -197,12 +199,13 @@ class CounterTests(unittest.TestCase):
             sleep(0.05)
             self.assertEqual(v.last_values, {"test1": 3})
 
-            v.stop_auto_report()
+            stop_auto_reporting()
             test1.report_event("test1", "value", 1)
             sleep(0.05)
             self.assertEqual(v.last_values, {"test1": 3})
         finally:
             unregister_counter(counter=test1)
+            unregister_reporter(v)
 
     def test_registry_get_values(self):
         reg = CounterRegistry()
@@ -283,14 +286,16 @@ class CounterTests(unittest.TestCase):
         jsfr = JSONFileReporter(output_file=filename)
         test1 = EventCounter("test1")
         register_counter(test1)
+        register_reporter(jsfr)
 
         try:
             test1.report_event("test1", "value", 2)
 
-            jsfr.report()
+            GLOBAL_REPORTING_CONTROLLER.report()
             report = JSONFileReporter.safe_read(filename)
             self.assertEqual(report, {"test1": 2})
 
             os.unlink(filename)
         finally:
             unregister_counter(counter=test1)
+            unregister_reporter(jsfr)
