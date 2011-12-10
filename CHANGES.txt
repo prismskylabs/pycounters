@@ -1,5 +1,8 @@
 0.4:
     - added a patcher util class to allow injecting events to existing libraries/code.
+    - decoupled counter names from the names of events they count. Still, by default a counter will count events with
+      it's name
+    - shortcut decorators now take the name of the function they wrap as a default event name
 
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.

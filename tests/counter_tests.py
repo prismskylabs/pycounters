@@ -150,7 +150,7 @@ class CounterTests(unittest.TestCase):
         c.timer = FakeThreadLocalTimer()
         register_counter(c)
         try:
-            @time("c")
+            @time(name="c")
             def f():
                 c.timer._get_current_time() # advances time -> just like sleep 1
                 pass
@@ -171,10 +171,10 @@ class CounterTests(unittest.TestCase):
                 self.i = self.i + 1
                 return self.i
 
-        c = FakeFrequencyCounter("c", window_size=10)
+        c = FakeFrequencyCounter("c",events=["f","c"], window_size=10)
         register_counter(c)
         try:
-            @frequency("c")
+            @frequency()
             def f():
                 pass
 
@@ -182,8 +182,8 @@ class CounterTests(unittest.TestCase):
             def g():
                 pass
 
-            g()
             f()
+            g()
 
             self.assertEquals(c.get_value().value, 0.5)
         finally:
