@@ -7,8 +7,18 @@ class BaseCounter(BaseListener):
 
 
 
-    def __init__(self,name):
+    def __init__(self,name,events=None):
+        """
+           name - name of counter
+           events - events this counter should count. can be
+                None - defaults to events called the same as counter name
+                [event, event,..] - a list of events to listen to
+        """
         self.name=name
+        if events is None:
+            events = [name]
+        super(BaseCounter,self).__init__(events=events)
+
         self.lock = RLock()
 
     def report_event(self,name,property,param):

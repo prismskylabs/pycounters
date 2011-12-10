@@ -2,8 +2,8 @@ import os
 import unittest
 from time import sleep
 
-from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting
-from pycounters.base import CounterRegistry, THREAD_DISPATCHER
+from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting, report_value
+from pycounters.base import CounterRegistry, THREAD_DISPATCHER, EventDispatcher
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
 from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import JSONFileReporter
@@ -22,6 +22,9 @@ class FakeThreadLocalTimer(ThreadLocalTimer):
             self.curtime = 0
         return self.curtime
 
+class SimpleValueReporter(BaseReporter):
+    def output_values(self,counter_values):
+        self.last_values = counter_values
 
 class FakeTimer(Timer):
     """ causes time to behave rationaly so it can be tested. """
@@ -110,6 +113,38 @@ class CounterTests(unittest.TestCase):
         f.start()
         self.assertEqual(f.stop(), 2)
 
+
+    def test_one_counter_multiple_events(self):
+        test = TotalCounter("test",events=["test1","test2"])
+        register_counter(test)
+
+        test.report_event("test1", "value", 1)
+        test.report_event("test2", "value", 2)
+        self.assertEquals(test.get_value().value, 3)
+
+        unregister_counter(counter=test)
+
+    def test_multiple_counters_one_event(self):
+        test1 = TotalCounter("test1",events=["test"])
+        register_counter(test1)
+        test2 = TotalCounter("test2",events=["test"])
+        register_counter(test2)
+
+        v = SimpleValueReporter()
+        register_reporter(v)
+
+        report_value("test",1)
+        GLOBAL_REPORTING_CONTROLLER.report()
+        self.assertEquals(v.last_values,dict(test1=1,test2=1))
+
+        unregister_counter(counter=test1)
+        unregister_counter(counter=test2)
+
+        unregister_reporter(reporter=v)
+
+
+
+
     def test_perf_time(self):
         c = AverageTimeCounter("c")
         c.timer = FakeThreadLocalTimer()
@@ -177,14 +212,11 @@ class CounterTests(unittest.TestCase):
         self.assertEquals(test.get_value().value, 1)
 
     def test_basic_reporter(self):
-        class ValueReporter(BaseReporter):
-            def output_values(self,counter_values):
-                self.last_values = counter_values
 
         test1 = EventCounter("test1")
         register_counter(test1)
 
-        v = ValueReporter()
+        v = SimpleValueReporter()
         register_reporter(v)
         start_auto_reporting(0.01)
 
@@ -208,7 +240,7 @@ class CounterTests(unittest.TestCase):
             unregister_reporter(v)
 
     def test_registry_get_values(self):
-        reg = CounterRegistry()
+        reg = CounterRegistry(EventDispatcher())
         test1 = EventCounter("test1")
         reg.add_counter(test1)
         test2 = EventCounter("test2")

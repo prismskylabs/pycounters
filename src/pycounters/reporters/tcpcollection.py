@@ -416,10 +416,10 @@ class CollectingNode(object):
                 go=self.get_command_and_execute()
             except (IOError,EOFError) as e:
                 if not self._shutting_down:
-                    self.debug_log.exception("%s: Got an IOError/EOFError %s",self.id,e)
+                    self.debug_log.warning("%s: Got an IOError/EOFError %s" % (self.id,e))
                     self._close_socket()
 
-                    self.debug_log.info("%s: Call io_error_callback.",self.id)
+                    self.debug_log.info("%s: Call io_error_callback." % (self.id,))
                     self.io_error_callback(e)
                 go=False
 

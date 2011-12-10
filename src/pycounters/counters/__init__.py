@@ -10,7 +10,7 @@ class EventCounter(TriggerMixin,BaseCounter):
     """ Counts the number of times an end event has fired.
     """
 
-    def __init__(self,name):
+    def __init__(self,name,events=None):
         self.value = 0L
         super(EventCounter,self).__init__(name)
 
@@ -34,13 +34,13 @@ class TotalCounter(AutoDispatch,BaseCounter):
     """ Counts the total of events' values.
     """
 
-    def __init__(self,name):
+    def __init__(self,name,events=None):
         self.value = 0L
-        super(TotalCounter,self).__init__(name)
+        super(TotalCounter,self).__init__(name,events=events)
 
 
     def _get_value(self):
-        return AccumulativeCounterValue(self.value);
+        return AccumulativeCounterValue(self.value)
 
     def _report_event_value(self,name,value):
 
@@ -57,8 +57,8 @@ class TotalCounter(AutoDispatch,BaseCounter):
 class AverageWindowCounter(AutoDispatch,BaseCounter):
     """ Calculates a running average of arbitrary values """
 
-    def __init__(self,name,window_size=300.0):
-        super(AverageWindowCounter,self).__init__(name)
+    def __init__(self,name,window_size=300.0,events=None):
+        super(AverageWindowCounter,self).__init__(name,events=events)
         self.window_size=window_size
         self.values = deque()
         self.times = deque()
@@ -118,12 +118,12 @@ class AverageTimeCounter(TimerMixin,AverageWindowCounter):
 class ValueAccumulator(AutoDispatch,BaseCounter):
     """ Captures all named values it gets and accumulates them. Also allows rethrowing them, prefixed with their name."""
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self,name,events=None):
         self.accumulated_values=dict()
         # forces the object not to accumulate values. Used when the object itself is raising events
         self._ignore_values = False
 
-        super(ValueAccumulator,self).__init__(*args,**kwargs)
+        super(ValueAccumulator,self).__init__(name,events=events)
 
 
     def _report_event_value(self,name,value):

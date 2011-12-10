@@ -6,9 +6,10 @@ import re
 
 class CounterRegistry(object):
 
-    def __init__(self):
+    def __init__(self,dispatcher):
         super(CounterRegistry,self).__init__()
         self.lock =RLock()
+        self.dispatcher = dispatcher
         self.registry=dict()
 
 
@@ -29,6 +30,7 @@ class CounterRegistry(object):
                 return False
 
             self.registry[counter.name] = counter
+            self.dispatcher.add_listener(counter)
             return True
 
 
@@ -40,6 +42,8 @@ class CounterRegistry(object):
             if not name:
                 raise Exception("trying to remove a counter from perfomance registry but no counter or name supplied.")
 
+
+            self.dispatcher.remove_listener(counter)
             self.registry.pop(name)
 
     def get_counter(self,name,throw=True):
@@ -55,6 +59,12 @@ class CounterRegistry(object):
 
 class BaseListener(object):
 
+    def __init__(self,events=None):
+        """
+            events - a list of events name to listen to. Use None for all.
+        """
+        self.events = events
+
     def report_event(self,name,property,param):
         """ reports an event to this listener """
         raise NotImplementedError("report_event is not implemented")
@@ -62,6 +72,7 @@ class BaseListener(object):
 class EventLogger(BaseListener):
 
     def __init__(self,logger,name_filter=None,property_filter=None,logging_level=logging.DEBUG):
+        super(EventLogger,self).__init__()
         self.logger = logger
         self.logging_level = logging_level
         self.name_filter = None
@@ -101,22 +112,41 @@ class RegistryListener(BaseListener):
 class EventDispatcher(object):
 
     def __init__(self):
-        self.listeners=set()
+        self.listeners=dict()
+        self.listeners[None]=set()
         self.lock=RLock()
 
 
     def dispatch_event(self,name,property,param):
         with self.lock:
-            for l in self.listeners:
+
+            ## dispatch a all registraar os None
+            for l in self.listeners.get(None,[]):
+                l.report_event(name,property,param)
+
+            for l in self.listeners.get(name,[]):
                 l.report_event(name,property,param)
 
     def add_listener(self,listener):
         with self.lock:
-            self.listeners.add(listener)
+            if listener.events is None:
+                self.listeners[None].add(listener)
+            else:
+                for event in listener.events:
+                    s = self.listeners.get(event)
+                    if s is None:
+                        s = set()
+                        self.listeners[event]=s
+                    s.add(listener)
 
     def remove_listener(self,listener):
         with self.lock:
-            self.listeners.remove(listener)
+            if listener.events is None:
+                self.listeners[None].remove(listener)
+            else:
+                for event in listener.events:
+                    s = self.listeners.get(event)
+                    s.remove(listener)
 
 
 
@@ -154,10 +184,9 @@ class ThreadSpecificDispatcher(thread_local):
 
 
 
-GLOBAL_REGISTRY = CounterRegistry()
-
 GLOBAL_DISPATCHER = EventDispatcher()
-GLOBAL_DISPATCHER.add_listener(RegistryListener(GLOBAL_REGISTRY))
+GLOBAL_REGISTRY = CounterRegistry(GLOBAL_DISPATCHER)
+
 
 THREAD_DISPATCHER = ThreadSpecificDispatcher()
 class CounterValueBase(object):
