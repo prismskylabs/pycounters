@@ -7,6 +7,7 @@ Use PyCounters to get high level and concise overview of what's going on in your
 See #### (read the docs) for more information
 
 """
+import logging
 from shortcuts import _make_reporting_decorator
 from . import reporters,base
 
@@ -87,4 +88,4 @@ def configure_multi_process_collection(collecting_address=[("",60907),("",60906)
     """
 
     reporters.base.GLOBAL_REPORTING_CONTROLLER.configure_multi_process(collecting_address=collecting_address,
-        timeout_in_sec=timeout_in_sec)
+        timeout_in_sec=timeout_in_sec,debug_log=logging.getLogger(name="pycounters_multi_proc"))
