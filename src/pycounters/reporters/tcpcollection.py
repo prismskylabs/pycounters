@@ -202,7 +202,7 @@ class CollectingLeader(object):
                 try:
                     node.send(msg)
                 except IOError as e:
-                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s,\nmsg:%s",node.id,e,msg)
+                    self.debug_log.warning("Get an error when sending to node %s:\nerror:%s,\nmsg:%s",node.id,e,msg)
 
                 try:
                     node.close()
