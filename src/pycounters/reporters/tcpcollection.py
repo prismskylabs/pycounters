@@ -231,7 +231,7 @@ class CollectingLeader(object):
                 try:
                     node.send(data)
                 except IOError as e:
-                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s,\ndata:%s",node.id,e,data)
+                    self.debug_log.warning("Get an error when sending to node %s:\nerror:%s,\ndata:%s",node.id,e,data)
                     try:
                         node.close()
                     except:
@@ -255,7 +255,7 @@ class CollectingLeader(object):
                 try:
                     ret[node.id]=node.send_and_receive("collect")
                 except IOError as e:
-                    self.debug_log.exception("Get an error when sending to node %s:\nerror:%s",node.id,e)
+                    self.debug_log.warning("Get an error when sending to node %s:\nerror:%s",node.id,e)
                     node.close()
                     error_nodes.append(node.id)
 
