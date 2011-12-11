@@ -374,7 +374,7 @@ Step 6 - Multiprocess support
 Some application (like a web server) do not run in a single process. Still, you want to collect global metrics like the
 ones discussed before in this tutorial.
 
-PyCounters support multi-processing by supplying a couple of :ref:`reporters <reporters>` which can generate a report from counters across
-processes. To use them you need to instantiate a reporter with identical settings in every process of your application.
-The different reporters communicate between them using TCP/IP sockets, exchanging data, aggregating it and outputting it
-according to the reporter used.
+PyCounters supports aggreating information from multiple running processes. To do so call
+:meth:`<pycounters.configure_multi_process_collection` on every process you want to aggregate data from. The parameters
+to this method will tell PyCounters what port to use for aggregation and, if running on multiple servers, which server
+to collect data on.

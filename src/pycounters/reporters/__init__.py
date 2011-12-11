@@ -30,12 +30,13 @@ class LogReporter(BaseReporter):
 class JSONFileReporter(BaseReporter):
     """
         Reports to a file in a JSON format.
-        :param output_file: a file name to which the reports will be written.
+
     """
 
 
     def __init__(self,output_file=None):
-        """ output will be logged to output_log
+        """
+            :param output_file: a file name to which the reports will be written.
         """
         super(JSONFileReporter,self).__init__()
         self.output_file = output_file

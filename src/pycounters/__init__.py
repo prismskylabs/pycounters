@@ -74,7 +74,16 @@ def unregister_reporter(reporter=None):
 
 def configure_multi_process_collection(collecting_address=[("",60907),("",60906)],timeout_in_sec=120):
     """
-      configures PyCounters to collect values from multiple processes
+        configures PyCounters to collect values from multiple processes
+
+        :param collecting_address: a list of (address,port) tuples address of machines and ports data should be collected on.
+            the extra tuples are used as backup in case the first address/port combination is (temporarily)
+            unavailable. PyCounters would automatically start using the preferred address/port when it becomes
+            available again. This behavior is handy when restarting the program and the old port is not yet
+            freed by the OS.
+        :param timeout_in_sec: timeout configuration for connections. Default should be good enough for pratically
+            everyone.
+
     """
 
     reporters.base.GLOBAL_REPORTING_CONTROLLER.configure_multi_process(collecting_address=collecting_address,

@@ -55,8 +55,14 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
     def __init__(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=CollectingRole.AUTO_ROLE,
                              timeout_in_sec=120):
             """
-                collecting_address = address of the machine data should be collected on.
-                collecing_port = port of collecting process
+                collecting_address =
+                    a list of (address,port) tuples address of machines and ports data should be collected on.
+                    the extra tuples are used as backup in case the first address/port combination is (temporarily)
+                    unavailable. PyCounters would automatically start using the preferred address/port when it becomes
+                    available again. This behavior is handy when restarting the program and the old port is not yet
+                    freed by the OS.
+
+
                 role = role of current process, set to AUTO for auto leader election
             """
             super(CounterValuesCollector,self).__init__()

@@ -47,7 +47,7 @@ value events
 Counters
 --------------------
 
-All the "smartness" of PyCounters is bundeled withing a set of Counters. Counters are in charge of intercepting and interpreting
+All the "smartness" of PyCounters is bundled withing a set of Counters. Counters are in charge of intercepting and interpreting
 events reported by different parts of the program. As mentioned before, you can register a Counter when you want to analyze events
 with identical names. You do so by using the :py:func:`register_counter` function: ::
 
@@ -63,7 +63,7 @@ or by name::
 
     unregister_counter(name="some_name")
 
-.. note:: After unregistering the counter all events named "some_name" will be ignored.
+.. note:: After unregistering the counter all events named "some_name" will be ignored (unless some other counter listens to them).
 .. note:: You can only register a single counter for any given name.
 
 
@@ -77,11 +77,11 @@ Reporters
 
 .. py:currentmodule:: pycounters.reporters
 
-Reportes are used to collect a report from the currently registered Counters. Reporters are not supposed to run often as that
+Reporters are used to collect a report from the currently registered Counters. Reporters are not supposed to run often as that
 will have a performance impact.
 
-At the moment PyCounters can only output to python logs. You do so by creating an instance of :py:obj:`LogReporter` and
-turning auto reporting on (using :py:meth:`LogReporter.start_auto_report` .)
+At the moment PyCounters can only output to python logs and JSON files. For example, to output to logs, create
+an instance of :py:obj:`LogReporter` and turn on auto reporting (using :py:meth:`LogReporter.start_auto_report` .)
 
 
 .. _shortcuts:

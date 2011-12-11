@@ -63,14 +63,13 @@ Reporters
     :members:
     :inherited-members:
 
-.. autoclass:: MultiProcessLogReporter
-    :members:
-    :inherited-members:
+^^^^^^^^^^^^^^^^^^^^^^^
+Multi-process reporting
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: MultiProcessJSONFileReporter
-    :members:
-    :inherited-members:
+.. py:currentmodule:: pycounters
 
+.. autofunction:: configure_multi_process_collection
 
 --------------------
 Registering counters

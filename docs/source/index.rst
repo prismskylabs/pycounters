@@ -33,7 +33,7 @@ Count the number of times per second a function is executed::
 
     from pycounters.shortcuts import frequency
 
-    @frequency("counter_name")
+    @frequency()
     def f():
         """ some interesting work like serving a request """
         pass
@@ -47,7 +47,7 @@ Count the average wall clock time a function runs::
 
     from pycounters.shortcuts import time
 
-    @time("counter_name")
+    @time()
     def f():
         """ some interesting work like serving a request """
         pass
@@ -65,7 +65,7 @@ Counting some event somewhere in your code::
     def some_code():
         ...
         if TEST_FOR_SOMETHING:
-            occurrence("counter_name")
+            occurrence("event_name")
         ...
 
 ---------------------------------
@@ -82,7 +82,7 @@ to initialize an instance of the LogReporter: ::
     reporter.start_auto_report(seconds=300)
 
 Once adding this code, all the counters will periodically report their stats to a log named "counters".
-Here is an exmaple: ::
+Here is an example: ::
 
     2011-06-03 18:12:44,881 | 9130|1286490432 | counters | INFO | posting 0.589342236519
     2011-06-03 18:12:44,888 | 9130|1286490432 | counters | INFO | search 1.47849245866
