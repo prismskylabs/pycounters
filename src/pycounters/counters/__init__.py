@@ -202,4 +202,9 @@ class ThreadTimeCategorizer(BaseListener):
         if clear:
             self.category_timers.clear()
 
-  
+
+    def get_times(self):
+        ret = []
+        for k,v in self.category_timers.iteritems():
+            ret.append((self.name + "." + k,v.get_accumulated_time()))
+        return ret
