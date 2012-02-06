@@ -63,6 +63,17 @@ Reporters
     :members:
     :inherited-members:
 
+.. py:currentmodule:: pycounters
+
+.. autofunction:: register_reporter
+
+.. autofunction:: unregister_reporter
+
+
+.. autofunction:: start_auto_reporting
+
+
+
 ^^^^^^^^^^^^^^^^^^^^^^^
 Multi-process reporting
 ^^^^^^^^^^^^^^^^^^^^^^^

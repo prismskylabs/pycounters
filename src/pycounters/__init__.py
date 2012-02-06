@@ -8,6 +8,7 @@ See #### (read the docs) for more information
 
 """
 import logging
+from pycounters.reporters.base import CollectingRole
 from shortcuts import _make_reporting_decorator
 from . import reporters,base
 
@@ -73,7 +74,7 @@ def unregister_reporter(reporter=None):
     reporters.base.GLOBAL_REPORTING_CONTROLLER.unregister_reporter(reporter)
 
 
-def configure_multi_process_collection(collecting_address=[("",60907),("",60906)],timeout_in_sec=120):
+def configure_multi_process_collection(collecting_address=[("",60907),("",60906)],timeout_in_sec=120,role=CollectingRole.AUTO_ROLE):
     """
         configures PyCounters to collect values from multiple processes
 
@@ -85,7 +86,10 @@ def configure_multi_process_collection(collecting_address=[("",60907),("",60906)
         :param timeout_in_sec: timeout configuration for connections. Default should be good enough for pratically
             everyone.
 
+        :param role: the role of this process. Leave at the default of AUTO_ROLE for pycounters to automatically choose
+            a collecting leader.
+
     """
 
     reporters.base.GLOBAL_REPORTING_CONTROLLER.configure_multi_process(collecting_address=collecting_address,
-        timeout_in_sec=timeout_in_sec,debug_log=logging.getLogger(name="pycounters_multi_proc"))
+        timeout_in_sec=timeout_in_sec,debug_log=logging.getLogger(name="pycounters_multi_proc"),role=role)

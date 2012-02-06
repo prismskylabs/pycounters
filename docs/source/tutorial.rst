@@ -100,7 +100,7 @@ we'll save a report every 5 minutes to a JSON file at /tmp/server.counters.json 
 To do so, create an instance of :class:`JSONFileReporter <pycounters.reporters.JSONFileReporter>` when the server starts: ::
 
     import SocketServer
-    from pycounters import shortcuts, reporters
+    from pycounters import shortcuts, reporters, start_auto_reporting, register_reporter
 
     ....
 
@@ -109,8 +109,9 @@ To do so, create an instance of :class:`JSONFileReporter <pycounters.reporters.J
         JSONFile = "/tmp/server.counters.json"
 
         reporter = reporters.JSONFileReporter(output_file=JSONFile)
+        register_reporter(reporter)
 
-        reporter.start_auto_report()
+        start_auto_reporting()
 
 
         # Create the server, binding to localhost on port 9999
@@ -121,9 +122,9 @@ To do so, create an instance of :class:`JSONFileReporter <pycounters.reporters.J
         server.serve_forever()
 
 .. note::
-    Reporters only report on demand (when their report() function is called). To make them report periodically you must call start_auto_report()
+    To make pycounters periodically output a report you must call start_auto_reporting()
 
-By default auto reports are generated every 5 minutes (change that by using the seconds parameter of start_auto_report() ). After five minutes
+By default auto reports are generated every 5 minutes (change that by using the seconds parameter of start_auto_reporting() ). After five minutes
 the reporter will save it's report. Here is an example of the contest of /tmp/server.counters.json: ::
 
     {"requests_time": 0.00039249658584594727, "requests_frequency": 0.014266581369872909}
@@ -220,7 +221,7 @@ To add the :class:`TotalCounter <pycounters.counters.TotalCounter>` counter, we 
 code: ::
 
     import SocketServer
-    from pycounters import shortcuts, reporters, report_value,counters, register_counter
+    from pycounters import shortcuts, reporters, report_value,counters, register_counter, start_auto_reporting, register_reporter
 
     ....
 
@@ -232,8 +233,9 @@ code: ::
         register_counter(data_len_counter) # register it, so it will start processing events
 
         reporter = reporters.JSONFileReporter(output_file=JSONFile)
+        register_reporter(reporter)
 
-        reporter.start_auto_report()
+        start_auto_reporting()
 
 
         # Create the server, binding to localhost on port 9999
@@ -252,7 +254,7 @@ Here is the complete code with all the changes so far (also available at the PyC
 `repository <https://bitbucket.org/bleskes/pycounters>`_ ): ::
 
     import SocketServer
-    from pycounters import shortcuts, reporters, register_counter, counters, report_value
+    from pycounters import shortcuts, reporters, register_counter, counters, report_value, register_reporter, start_auto_reporting
 
     class MyTCPHandler(SocketServer.BaseRequestHandler):
         """
@@ -285,8 +287,9 @@ Here is the complete code with all the changes so far (also available at the PyC
         register_counter(data_len_counter) # register it, so it will start processing events
 
         reporter = reporters.JSONFileReporter(output_file=JSONFile)
+        register_reporter(reporter)
 
-        reporter.start_auto_report()
+        start_auto_reporting()
 
 
         # Create the server, binding to localhost on port 9999
@@ -375,6 +378,6 @@ Some application (like a web server) do not run in a single process. Still, you 
 ones discussed before in this tutorial.
 
 PyCounters supports aggreating information from multiple running processes. To do so call
-:meth:`<pycounters.configure_multi_process_collection` on every process you want to aggregate data from. The parameters
+:meth:`pycounters.configure_multi_process_collection` on every process you want to aggregate data from. The parameters
 to this method will tell PyCounters what port to use for aggregation and, if running on multiple servers, which server
 to collect data on.

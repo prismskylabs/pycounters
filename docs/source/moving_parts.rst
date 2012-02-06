@@ -81,7 +81,7 @@ Reporters are used to collect a report from the currently registered Counters. R
 will have a performance impact.
 
 At the moment PyCounters can only output to python logs and JSON files. For example, to output to logs, create
-an instance of :py:obj:`LogReporter` and turn on auto reporting (using :py:meth:`LogReporter.start_auto_report` .)
+an instance of :py:obj:`LogReporter` and turn on auto reporting (using :py:meth:`start_auto_reporting` .)
 
 
 .. _shortcuts:

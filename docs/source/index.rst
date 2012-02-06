@@ -79,7 +79,8 @@ to initialize an instance of the LogReporter: ::
     import logging
 
     reporter=pycounters.reporters.LogReporter(logging.getLogger("counters"))
-    reporter.start_auto_report(seconds=300)
+    pycounters.register_reporter(reporter)
+    pycounters.start_auto_reporting(seconds=300)
 
 Once adding this code, all the counters will periodically report their stats to a log named "counters".
 Here is an example: ::
