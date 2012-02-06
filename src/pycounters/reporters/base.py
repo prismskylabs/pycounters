@@ -266,7 +266,7 @@ class ReportingController(object):
            setup reporting for a multi process scenario
         """
         self.collector=MultiProcessCounterValueCollector(collecting_address=collecting_address,debug_log=debug_log,
-                        role=CollectingRole.AUTO_ROLE,timeout_in_sec=120)
+                        role=role,timeout_in_sec=timeout_in_sec)
 
 
     def register_reporter(self,reporter):
