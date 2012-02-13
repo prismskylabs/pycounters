@@ -4,6 +4,7 @@
       it's name
     - shortcut decorators now take the name of the function they wrap as a default event name
     - Added a role option to multi process reporting initializations.
+    - Made all report_* and shortcuts decorators usable as context managers.
 
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.

@@ -50,15 +50,15 @@ class CounterTests(unittest.TestCase):
             def cat2():
                 pass
 
-            @report_start_end("multicat")
+            @report_start_end()
             def multicat():
                 cat1()
                 cat2()
 
-            @report_start_end("f")
             def f():
-                multicat()
-                cat1()
+                with report_start_end("f"):
+                    multicat()
+                    cat1()
 
             f()
 
@@ -103,6 +103,41 @@ class CounterTests(unittest.TestCase):
                     ("ac.s1", "value", 3),
                 ]
             )
+
+    def test_report_start_end(self):
+
+        events = []
+        with EventCatcher(events):
+            @report_start_end()
+            def f():
+                pass
+
+            f()
+
+
+            @report_start_end("h")
+            def g():
+                pass
+
+            g()
+
+
+            def raises():
+                with report_start_end():pass
+
+
+            self.assertRaises(Exception,raises)
+
+        self.assertEqual(events,
+                [
+                    ("f", "start", None),
+                    ("f", "end", None),
+                    ("h", "start", None),
+                    ("h", "end", None),
+                ]
+            )
+
+
 
     def test_Thread_Timer(self):
         f = FakeThreadLocalTimer()
@@ -312,6 +347,9 @@ class CounterTests(unittest.TestCase):
         b.value = None
         a.merge_with(b)
         self.assertEquals(a.value, 4)
+
+
+
 
     def test_json_output(self):
         filename = "/tmp/json_test.txt"

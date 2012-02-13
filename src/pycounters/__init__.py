@@ -9,7 +9,7 @@ See #### (read the docs) for more information
 """
 import logging
 from pycounters.reporters.base import CollectingRole
-from shortcuts import _make_reporting_decorator
+from shortcuts import _reporting_decorator_context_manager
 from . import reporters,base
 
 def report_start(name):
@@ -24,11 +24,13 @@ def report_end(name):
     """
     base.THREAD_DISPATCHER.dispatch_event(name,"end",None)
 
-def report_start_end(name):
+def report_start_end(name=None):
     """
-     returns a function decorator which raises start and end events
+     returns a function decorator and/or context manager which raises start and end events.
+     If name is None events name is set to the name of the decorated function. In that case report_start_end
+     can not be used as a context manager.
     """
-    return _make_reporting_decorator(name)
+    return _reporting_decorator_context_manager(name)
 
 
 def report_value(name,value):
