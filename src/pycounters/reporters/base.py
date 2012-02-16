@@ -1,12 +1,8 @@
 from exceptions import NotImplementedError, Exception
 import threading
 import time
-import os
-import json
-import fcntl
 from ..base import GLOBAL_REGISTRY, CounterValueCollection
 from . import tcpcollection
-import pycounters
 
 __author__ = 'boaz'
 
