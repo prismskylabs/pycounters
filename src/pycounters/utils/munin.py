@@ -29,7 +29,7 @@
         }
     ]
 
-    p = Plugin("output_file.json",config) # initialize the plugin
+    p = Plugin("output_file.json", config) # initialize the plugin
 
     p.process_cmd() # process munin command and output requested data or config
 
@@ -37,15 +37,17 @@
 import sys
 from .. import reporters
 
-def _fprint(fmt,*args):
+
+def _fprint(fmt, *args):
     print(fmt % args)
+
 
 class Plugin(object):
     """
     a small utility to write munin plugins based on the output of the JSONFile reporter
 
     example usage (munin_plugin.py) : ::
- 
+
         #!/usr/bin/python
 
         from pycounters.utils.munin import Plugin
@@ -71,21 +73,20 @@ class Plugin(object):
             }
         ]
 
-        p = Plugin("pycounters_output_file.json",config) # initialize the plugin
+        p = Plugin("pycounters_output_file.json", config) # initialize the plugin
 
         p.process_cmd() # process munin command and output requested data or config
 
     """
 
-    def __init__(self,json_output_file=None,config=None):
+    def __init__(self, json_output_file=None, config=None):
         self.output_file = json_output_file
         self.config = config
 
+    def counter_id_to_munin_id(self, counter_id):
+        return counter_id.replace(" ", "_").replace(".", "_")
 
-    def counter_id_to_munin_id(self,counter_id):
-        return counter_id.replace(" ","_").replace(".","_")
-
-    def output_data(self,config):
+    def output_data(self, config):
         """ executes the data command
         """
 
@@ -93,38 +94,34 @@ class Plugin(object):
         for graph in config:
             if not graph.get("id"):
                 raise Exception("Missing graph id")
-            _fprint("multigraph %s",self.counter_id_to_munin_id(graph["id"]))
+            _fprint("multigraph %s", self.counter_id_to_munin_id(graph["id"]))
             for data in graph.get("data"):
                 counter = data.get("counter")
                 v = values.get(counter)
                 if v is not None:
-                    _fprint("%s.value %s",self.counter_id_to_munin_id(counter),v)
+                    _fprint("%s.value %s", self.counter_id_to_munin_id(counter), v)
 
-
-
-    def output_config(self,config):
+    def output_config(self, config):
         """ executes the config command
         """
         for graph in config:
             if not graph.get("id"):
                 raise Exception("Missing graph id")
-            _fprint("multigraph %s",self.counter_id_to_munin_id(graph["id"]))
-            for g_opt,g_val in graph.get("global",{}).iteritems():
-                _fprint("graph_%s %s",g_opt,g_val)
+            _fprint("multigraph %s", self.counter_id_to_munin_id(graph["id"]))
+            for g_opt, g_val in graph.get("global", {}).iteritems():
+                _fprint("graph_%s %s", g_opt, g_val)
 
             for data in graph.get("data"):
                 counter = data.get("counter")
                 if not counter:
-                    raise Exception("Missing counter key in data part of graph %s",graph["id"])
+                    raise Exception("Missing counter key in data part of graph %s", graph["id"])
 
-                for g_opt,g_val in data.iteritems():
+                for g_opt, g_val in data.iteritems():
                     if g_opt == "counter":
                         continue
-                    _fprint("%s.%s %s",self.counter_id_to_munin_id(counter),g_opt,g_val)
-
+                    _fprint("%s.%s %s", self.counter_id_to_munin_id(counter), g_opt, g_val)
 
             _fprint("")
-                                    
 
     def process_cmd(self):
         """process munin command and output requested data or config"""

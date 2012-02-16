@@ -6,25 +6,24 @@ from .base import  BaseReporter
 
 __author__ = 'boaz'
 
+
 class LogReporter(BaseReporter):
     """ Log based reporter.
         :param output_log: a python log object to output reports to.
     """
 
-    def __init__(self,output_log=None):
-          """ output will be logged to output_log
-          """
-          super(LogReporter,self).__init__()
-          self.logger = output_log
+    def __init__(self, output_log=None):
+        """ output will be logged to output_log
+        """
+        super(LogReporter, self).__init__()
+        self.logger = output_log
 
+    def output_values(self, counter_values):
+        logs = sorted(counter_values.iteritems(), cmp=lambda a, b: cmp(a[0], b[0]))
 
-    def output_values(self,counter_values):
-      logs = sorted(counter_values.iteritems(),cmp=lambda a,b: cmp(a[0],b[0]))
-
-      for k,v in logs:
-          if not (k.startswith("__") and k.endswith("__")): ## don't output __node_reports__ etc.
-              self.logger.info("%s %s",k,v)
-
+        for k, v in logs:
+            if not (k.startswith("__") and k.endswith("__")):   # don't output __node_reports__ etc.
+                self.logger.info("%s %s", k, v)
 
 
 class JSONFileReporter(BaseReporter):
@@ -33,20 +32,17 @@ class JSONFileReporter(BaseReporter):
 
     """
 
-
-    def __init__(self,output_file=None):
+    def __init__(self, output_file=None):
         """
             :param output_file: a file name to which the reports will be written.
         """
-        super(JSONFileReporter,self).__init__()
+        super(JSONFileReporter, self).__init__()
         self.output_file = output_file
         ## try to open the file now, just to see if it is possible and raise an exception if not
-        self.output_values({"__initializing__" : True})
+        self.output_values({"__initializing__": True})
 
-
-    def output_values(self,counter_values):
-        JSONFileReporter.safe_write(counter_values,self.output_file)
-
+    def output_values(self, counter_values):
+        JSONFileReporter.safe_write(counter_values, self.output_file)
 
     @staticmethod
     def _lockfile(file):
@@ -65,33 +61,31 @@ class JSONFileReporter(BaseReporter):
         fcntl.flock(file, fcntl.LOCK_UN)
 
     @staticmethod
-    def safe_write(value,filename):
+    def safe_write(value, filename):
         """ safely writes value in a JSON format to file
         """
-        fd=os.open(filename,os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
+        fd = os.open(filename, os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
         JSONFileReporter._lockfile(fd)
         try:
 
-            file=os.fdopen(fd,"w")
-            json.dump(value,file)
+            file = os.fdopen(fd, "w")
+            json.dump(value, file)
         finally:
             JSONFileReporter._unlockfile(fd)
             file.close()
         # fd is now close by the with clause
 
-
     @staticmethod
     def safe_read(filename):
-       """ safely reads a value in a JSON format frome file
-       """
-       fd=os.open(filename,os.O_RDONLY)
-       JSONFileReporter._lockfile(fd)
-       try:
-           file=os.fdopen(fd,"r")
-           return json.load(file)
-       finally:
-           JSONFileReporter._unlockfile(fd)
-           file.close()
+        """ safely reads a value in a JSON format frome file
+        """
+        fd = os.open(filename, os.O_RDONLY)
+        JSONFileReporter._lockfile(fd)
+        try:
+            file = os.fdopen(fd, "r")
+            return json.load(file)
+        finally:
+            JSONFileReporter._unlockfile(fd)
+            file.close()
 
         # fd is now close by the with clause
-

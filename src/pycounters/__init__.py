@@ -10,19 +10,22 @@ See #### (read the docs) for more information
 import logging
 from pycounters.reporters.base import CollectingRole
 from shortcuts import _reporting_decorator_context_manager
-from . import reporters,base
+from . import reporters, base
+
 
 def report_start(name):
     """ reports an event's start.
         NOTE: you *must*  fire off a corresponding event end with report_end
     """
-    base.THREAD_DISPATCHER.dispatch_event(name,"start",None)
+    base.THREAD_DISPATCHER.dispatch_event(name, "start", None)
+
 
 def report_end(name):
     """ reports an event's end.
         NOTE: you *must* have fired off a corresponding event end with report_start
     """
-    base.THREAD_DISPATCHER.dispatch_event(name,"end",None)
+    base.THREAD_DISPATCHER.dispatch_event(name, "end", None)
+
 
 def report_start_end(name=None):
     """
@@ -33,23 +36,24 @@ def report_start_end(name=None):
     return _reporting_decorator_context_manager(name)
 
 
-def report_value(name,value):
+def report_value(name, value):
     """
      reports a value event to the counters.
     """
 
-    base.THREAD_DISPATCHER.dispatch_event(name,"value",value)
+    base.THREAD_DISPATCHER.dispatch_event(name, "value", value)
 
-def register_counter(counter,throw_if_exists=True):
+
+def register_counter(counter, throw_if_exist=True):
     """ Register a counter with PyCounters
     """
-    base.GLOBAL_REGISTRY.add_counter(counter,throw=throw_if_exists)
+    base.GLOBAL_REGISTRY.add_counter(counter, throw=throw_if_exists)
 
 
-def unregister_counter(counter=None,name=None):
+def unregister_counter(counter=None, name=None):
     """ Removes a previously registered counter
     """
-    base.GLOBAL_REGISTRY.remove_counter(counter=counter,name=name)
+    base.GLOBAL_REGISTRY.remove_counter(counter=counter, name=name)
 
 
 def start_auto_reporting(seconds=300):
@@ -58,9 +62,11 @@ def start_auto_reporting(seconds=300):
     """
     reporters.base.GLOBAL_REPORTING_CONTROLLER.start_auto_report(seconds=seconds)
 
+
 def stop_auto_reporting():
     """ Stop auto reporting """
     reporters.base.GLOBAL_REPORTING_CONTROLLER.stop_auto_report()
+
 
 def register_reporter(reporter=None):
     """
@@ -76,7 +82,8 @@ def unregister_reporter(reporter=None):
     reporters.base.GLOBAL_REPORTING_CONTROLLER.unregister_reporter(reporter)
 
 
-def configure_multi_process_collection(collecting_address=[("",60907),("",60906)],timeout_in_sec=120,role=CollectingRole.AUTO_ROLE):
+def configure_multi_process_collection(collecting_address=[("", 60907), ("", 60906)], timeout_in_sec=120,
+                                       role=CollectingRole.AUTO_ROLE):
     """
         configures PyCounters to collect values from multiple processes
 
@@ -94,4 +101,4 @@ def configure_multi_process_collection(collecting_address=[("",60907),("",60906)
     """
 
     reporters.base.GLOBAL_REPORTING_CONTROLLER.configure_multi_process(collecting_address=collecting_address,
-        timeout_in_sec=timeout_in_sec,debug_log=logging.getLogger(name="pycounters_multi_proc"),role=role)
+        timeout_in_sec=timeout_in_sec, debug_log=logging.getLogger(name="pycounters_multi_proc"), role=role)

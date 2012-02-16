@@ -20,10 +20,12 @@ class CounterValuesCollector(object):
     def get_values(self):
         return GLOBAL_REGISTRY.get_values().values
 
+
 class CollectingRole(object):
     LEADER_ROLE = 0
     NODE_ROLE = 1
     AUTO_ROLE = 2
+
 
 class MultiProcessCounterValueCollector(CounterValuesCollector):
     """
@@ -51,12 +53,11 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
 #            - The nodes are supposed to deliver their report as a CounterValueCollection.
 #            - The leader merges it and output it.
 
-
-    def __init__(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=CollectingRole.AUTO_ROLE,
+    def __init__(self, collecting_address=[("", 60907), ("", 60906)], debug_log=None, role=CollectingRole.AUTO_ROLE,
                              timeout_in_sec=120):
             """
                 collecting_address =
-                    a list of (address,port) tuples address of machines and ports data should be collected on.
+                    a list of (address, port) tuples address of machines and ports data should be collected on.
                     the extra tuples are used as backup in case the first address/port combination is (temporarily)
                     unavailable. PyCounters would automatically start using the preferred address/port when it becomes
                     available again. This behavior is handy when restarting the program and the old port is not yet
@@ -65,40 +66,40 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
 
                 role = role of current process, set to AUTO for auto leader election
             """
-            super(CounterValuesCollector,self).__init__()
-            self.debug_log= debug_log if debug_log else tcpcollection._noplogger()
+            super(CounterValuesCollector, self).__init__()
+            self.debug_log = debug_log if debug_log else tcpcollection._noplogger()
             self.lock = threading.RLock()
-            self.collecting_address=tcpcollection.normalize_hosts_and_ports(collecting_address)
-            self.leader =None
+            self.collecting_address = tcpcollection.normalize_hosts_and_ports(collecting_address)
+            self.leader = None
             self.node = None
             self.role = role
             self.actual_role = self.role
-            self.timeout_in_sec=timeout_in_sec
+            self.timeout_in_sec = timeout_in_sec
             self.init_role()
 
-    def _create_leader(self,collecting_addresses=None):
+    def _create_leader(self, collecting_addresses=None):
         if collecting_addresses is None:
             collecting_addresses = self.collecting_address
-        return tcpcollection.CollectingLeader(hosts_and_ports=collecting_addresses,debug_log=self.debug_log)
+        return tcpcollection.CollectingLeader(hosts_and_ports=collecting_addresses, debug_log=self.debug_log)
 
-    def _create_node(self,collecting_addresses=None):
+    def _create_node(self, collecting_addresses=None):
         if collecting_addresses is None:
             collecting_addresses = self.collecting_address
 
         return tcpcollection.CollectingNode(
                self.node_get_values,
                self.node_io_error_callback,
-               hosts_and_ports=collecting_addresses,debug_log=self.debug_log)
+               hosts_and_ports=collecting_addresses, debug_log=self.debug_log)
 
     def init_role(self):
         with self.lock:
-            self.actual_role = None # mark things as unknown...
+            self.actual_role = None  # mark things as unknown...
 
             if self.role == CollectingRole.LEADER_ROLE:
-                self.leader= self._create_leader()
+                self.leader = self._create_leader()
                 self.leader.try_to_lead(throw=True)
                 self.actual_role = CollectingRole.LEADER_ROLE
-                self.node = self._create_node() ## create node for this process
+                self.node = self._create_node()  # create node for this process
                 self.node.connect_to_leader()
             elif self.role == CollectingRole.NODE_ROLE:
                 self.node = self._create_node()
@@ -106,36 +107,32 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
                 self.actual_role = CollectingRole.NODE_ROLE
             elif self.role == CollectingRole.AUTO_ROLE:
                 self.node = self._create_node()
-                self.leader= self._create_leader()
+                self.leader = self._create_leader()
                 self.debug_log.info("Role is set to auto. Electing a leader.")
                 (status, last_node_attempt_error, last_leader_attempt_error) =\
                     tcpcollection.elect_leader(self.node, self.leader, timeout_in_sec=self.timeout_in_sec)
 
                 if status:
                     self.actual_role = CollectingRole.LEADER_ROLE
-                    self.node.connect_to_leader() ## node for current process.
+                    self.node.connect_to_leader()  # node for current process.
                 else:
                     self.actual_role = CollectingRole.NODE_ROLE
 
                 self.debug_log.info("Leader elected. My Role is: %s", self.actual_role)
 
             if self.actual_role == CollectingRole.LEADER_ROLE:
-
-
-                if self.leader.leading_level >0 :
+                if self.leader.leading_level > 0:
                     # set an upgrading thread to try claim preferred leading settings
-
-                    upgrading_thread=threading.Thread(target=self._auto_upgrade_server_level_target)
-                    upgrading_thread.daemon=True
+                    upgrading_thread = threading.Thread(target=self._auto_upgrade_server_level_target)
+                    upgrading_thread.daemon = True
                     upgrading_thread.start()
 
-
-    def _try_upgrading_leader(self,potential_addresses):
+    def _try_upgrading_leader(self, potential_addresses):
         self.debug_log.debug("Trying to upgrade leadership")
-        new_leader=self._create_leader(collecting_addresses=potential_addresses)
+        new_leader = self._create_leader(collecting_addresses=potential_addresses)
         status = new_leader.try_to_lead()
         if status is None:
-            self.debug_log.info("New leader is established. Level is %s",new_leader.leading_level)
+            self.debug_log.info("New leader is established. Level is %s", new_leader.leading_level)
             with self.lock:
                 self.leader.reconnect_nodes()
                 self.leader.stop_leading()
@@ -145,19 +142,15 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
 
         return False
 
-
-
-
-    def _auto_upgrade_server_level_target(self,wait_time=60):
+    def _auto_upgrade_server_level_target(self, wait_time=60):
         """ a target function for upgrading server level, if it happens to be too high..
         """
         while True:
-            if self.actual_role != CollectingRole.LEADER_ROLE or self.leader.leading_level==0:
+            if self.actual_role != CollectingRole.LEADER_ROLE or self.leader.leading_level == 0:
                 self.debug_log.info("server upgrading stopped - I'm not a leader or leading level is 0")
                 return
 
             potential_addresses = self.collecting_address[:self.leader.leading_level]
-
 
             if self.role == CollectingRole.AUTO_ROLE:
                 # node is in auto_role... first figure out if the is some other leading available with a better
@@ -175,7 +168,6 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
                         self.leader = None
                         self.actual_role = CollectingRole.NODE_ROLE
 
-
                     return
 
             ## Node is either in auto role with no alternative leader
@@ -186,10 +178,8 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
                 self.debug_log.debug("Highest level achieved. Stopping.")
                 return
 
-
             self.debug_log.debug("Failed to upgrade to a higher level... waiting and trying again..")
             time.sleep(wait_time)
-
 
     def get_values(self):
         """ collects values a report on leader process. O.w. a no-op
@@ -200,22 +190,19 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
                 merged_values = self.merge_values(values)
                 return merged_values
 
-        return None # not a leader. Life sucks.
+        return None  # not a leader. Life sucks.
 
-
-    def merge_values(self,values):
+    def merge_values(self, values):
         merged_collection = CounterValueCollection()
         original_values = {}
-        for node,report in values.iteritems():
-            self.debug_log.debug("Merging report from %s",node)
+        for node, report in values.iteritems():
+            self.debug_log.debug("Merging report from %s", node)
             merged_collection.merge_with(report)
-            original_values[node]=report.values
+            original_values[node] = report.values
 
         res = merged_collection.values
-        res["__node_reports__"]=original_values
+        res["__node_reports__"] = original_values
         return res
-
-
 
     def leader_collect_values(self):
         return self.leader.collect_from_all_nodes()
@@ -223,20 +210,19 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
     def node_get_values(self):
         return GLOBAL_REGISTRY.get_values()
 
-    def node_io_error_callback(self,err):
+    def node_io_error_callback(self, err):
         self.debug_log.warning("Received an IO Error. Re-applying role")
         self.init_role()
 
-
     def shutdown(self):
         with self.lock:
-            self.actual_role=None
+            self.actual_role = None
             if self.node:
                 self.node.close()
                 self.node = None
             if self.leader:
                 self.leader.stop_leading()
-                self.leader=None
+                self.leader = None
 
 
 class ReportingController(object):
@@ -247,11 +233,10 @@ class ReportingController(object):
     """
 
     def __init__(self):
-        super(ReportingController,self).__init__()
+        super(ReportingController, self).__init__()
         self.lock = threading.RLock()
-        self.reporters_registry=set()
+        self.reporters_registry = set()
         self.collector = CounterValuesCollector()
-
 
         self._auto_reporting_cycle = None
         self._auto_reporting_active = threading.Event()
@@ -259,38 +244,33 @@ class ReportingController(object):
         self._auto_reporting_thread.daemon = True
         self._auto_reporting_thread.start()
 
-
-    def configure_multi_process(self,collecting_address=[("",60907),("",60906)],debug_log=None,role=CollectingRole.AUTO_ROLE,
+    def configure_multi_process(self, collecting_address=[("", 60907), ("", 60906)], debug_log=None, role=CollectingRole.AUTO_ROLE,
                              timeout_in_sec=120):
         """
            setup reporting for a multi process scenario
         """
-        self.collector=MultiProcessCounterValueCollector(collecting_address=collecting_address,debug_log=debug_log,
-                        role=role,timeout_in_sec=timeout_in_sec)
+        self.collector = MultiProcessCounterValueCollector(collecting_address=collecting_address, debug_log=debug_log,
+                        role=role, timeout_in_sec=timeout_in_sec)
 
-
-    def register_reporter(self,reporter):
+    def register_reporter(self, reporter):
         with self.lock:
             self.reporters_registry.add(reporter)
 
-    def unregister_reporter(self,reporter):
+    def unregister_reporter(self, reporter):
         with self.lock:
             self.reporters_registry.remove(reporter)
-
 
     def report(self):
         """ Collects a report from the counters and outputs it
         """
         values = self.collector.get_values()
         if values is None:
-            return # collector decided to abort things
+            return  # collector decided to abort things
         with self.lock:
             for reporter in self.reporters_registry:
                 reporter.output_values(values)
 
-
-
-    def start_auto_report(self,seconds=300):
+    def start_auto_report(self, seconds=300):
         """
         Start reporting in a background thread. Reporting frequency is set by seconds param.
         """
@@ -301,8 +281,7 @@ class ReportingController(object):
         """ Stop auto reporting """
         self._auto_reporting_active.clear()
 
-
-    def _handle_background_error(self,e):
+    def _handle_background_error(self, e):
         """ is called by backround reporting thread on error. """
         pass
 
@@ -322,23 +301,15 @@ class ReportingController(object):
             time.sleep(self._auto_reporting_cycle)
 
 
-GLOBAL_REPORTING_CONTROLLER= ReportingController()
-
+GLOBAL_REPORTING_CONTROLLER = ReportingController()
 
 
 class BaseReporter(object):
 
-
-    def output_values(self,counter_values):
+    def output_values(self, counter_values):
         """ the main method of a reporter. The method should output counter_values (a dictionary)
             to whatever output target of the reporter.
 
             counter_values: a dictionary values are stored by counter names.
         """
         raise NotImplementedError("Implement output_values in a subclass.")
-
-
-
-
-
-
