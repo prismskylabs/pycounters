@@ -44,7 +44,7 @@ def report_value(name, value):
     base.THREAD_DISPATCHER.dispatch_event(name, "value", value)
 
 
-def register_counter(counter, throw_if_exist=True):
+def register_counter(counter, throw_if_exists=True):
     """ Register a counter with PyCounters
     """
     base.GLOBAL_REGISTRY.add_counter(counter, throw=throw_if_exists)
