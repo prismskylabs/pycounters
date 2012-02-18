@@ -104,7 +104,7 @@ class Plugin(object):
             collection_time = values.get("__collection_time__",None)
             if collection_time is None:
                 raise Exception(("JSON file %s was outputed by an old version of PyCounters, please upgrade to use"+
-                                "max_file_age_in_seconds feature.") % (self.output_file,))
+                                " max_file_age_in_seconds feature.") % (self.output_file,))
             if time.time() - collection_time > self.max_file_age_in_seconds:
                 return # json file is too old.
 
