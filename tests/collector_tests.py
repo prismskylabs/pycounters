@@ -2,15 +2,39 @@ import logging
 import unittest
 import threading
 from time import sleep
+from pycounters import register_counter, register_reporter, report_value, unregister_counter, unregister_reporter
 
 from pycounters.base import CounterValueCollection
+from pycounters.counters import TotalCounter
 from pycounters.counters.base import AccumulativeCounterValue
-from pycounters.reporters.base import CollectingRole, MultiProcessCounterValueCollector
+from pycounters.reporters.base import CollectingRole, MultiProcessCounterValueCollector, GLOBAL_REPORTING_CONTROLLER
 from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
+from tests.counter_tests import SimpleValueReporter
 
 
 class CollectorTests(unittest.TestCase):
-    def test_basic_collections(self):
+
+    def test_basic_collection(self):
+        test1 = TotalCounter("test1")
+        register_counter(test1)
+        test2 = TotalCounter("test2")
+        register_counter(test2)
+
+        v = SimpleValueReporter()
+        register_reporter(v)
+
+        report_value("test1",1)
+        report_value("test2",2)
+        GLOBAL_REPORTING_CONTROLLER.report()
+        self.assertIn("__collection_time__",v.last_values)
+        self.assertEquals(v.values_wo_metadata,dict(test1=1,test2=2))
+
+        unregister_counter(counter=test1)
+        unregister_counter(counter=test2)
+
+        unregister_reporter(reporter=v)
+
+    def test_basic_multi_proccess_collections(self):
         debug_log = None  # logging.getLogger("collection")
 
 

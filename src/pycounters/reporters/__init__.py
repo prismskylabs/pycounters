@@ -9,11 +9,11 @@ __author__ = 'boaz'
 
 class LogReporter(BaseReporter):
     """ Log based reporter.
-        :param output_log: a python log object to output reports to.
     """
 
     def __init__(self, output_log=None):
         """ output will be logged to output_log
+            :param output_log: a python log object to output reports to.
         """
         super(LogReporter, self).__init__()
         self.logger = output_log

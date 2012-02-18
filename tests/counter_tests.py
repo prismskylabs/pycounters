@@ -26,6 +26,10 @@ class SimpleValueReporter(BaseReporter):
     def output_values(self,counter_values):
         self.last_values = counter_values
 
+    @property
+    def values_wo_metadata(self):
+        return dict([(k,v) for k,v in self.last_values.iteritems() if not k.startswith("__")])
+
 class FakeTimer(Timer):
     """ causes time to behave rationaly so it can be tested. """
 
@@ -170,7 +174,7 @@ class CounterTests(unittest.TestCase):
 
         report_value("test",1)
         GLOBAL_REPORTING_CONTROLLER.report()
-        self.assertEquals(v.last_values,dict(test1=1,test2=1))
+        self.assertEquals(v.values_wo_metadata,dict(test1=1,test2=1))
 
         unregister_counter(counter=test1)
         unregister_counter(counter=test2)
@@ -260,16 +264,16 @@ class CounterTests(unittest.TestCase):
             test1.report_event("test1", "value", 2)
 
             sleep(0.1)
-            self.assertEqual(v.last_values, {"test1": 2})
+            self.assertEqual(v.values_wo_metadata, {"test1": 2})
 
             test1.report_event("test1", "value", 1)
             sleep(0.05)
-            self.assertEqual(v.last_values, {"test1": 3})
+            self.assertEqual(v.values_wo_metadata, {"test1": 3})
 
             stop_auto_reporting()
             test1.report_event("test1", "value", 1)
             sleep(0.05)
-            self.assertEqual(v.last_values, {"test1": 3})
+            self.assertEqual(v.values_wo_metadata, {"test1": 3})
         finally:
             unregister_counter(counter=test1)
             unregister_reporter(v)
@@ -363,6 +367,7 @@ class CounterTests(unittest.TestCase):
 
             GLOBAL_REPORTING_CONTROLLER.report()
             report = JSONFileReporter.safe_read(filename)
+            report = dict([(k,v) for k,v in report.iteritems() if not k.startswith("__")])
             self.assertEqual(report, {"test1": 2})
 
             os.unlink(filename)

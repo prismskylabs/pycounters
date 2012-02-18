@@ -14,7 +14,11 @@ class CounterValuesCollector(object):
     """
 
     def get_values(self):
-        return GLOBAL_REGISTRY.get_values().values
+        return self.add_metadata_to_values(GLOBAL_REGISTRY.get_values().values)
+
+    def add_metadata_to_values(self,values):
+        values["__collection_time__"] = time.time()
+        return values
 
 
 class CollectingRole(object):
@@ -184,7 +188,7 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
             with self.lock:
                 values = self.leader_collect_values()
                 merged_values = self.merge_values(values)
-                return merged_values
+                return self.add_metadata_to_values(merged_values)
 
         return None  # not a leader. Life sucks.
 
