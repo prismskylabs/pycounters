@@ -6,7 +6,8 @@
     - Added a role option to multi process reporting initializations.
     - Made all report_* and shortcuts decorators usable as context managers.
     - Munin plugin now ignores old reports by default
-    - Munin plugin now has the option not to output zero values. Handy for counters where a value of 0 means nothing happened.
+    - Counters which doesn't have any value now return None instead of 0.
+    - Fixed an issue with aggregation of average values when not all sources had the same value
 
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.

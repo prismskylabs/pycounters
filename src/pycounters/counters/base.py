@@ -142,17 +142,30 @@ class AccumulativeCounterValue(CounterValueBase):
     def merge_with(self, other_counter_value):
         """ updates this CounterValue with information of another. Used for multiprocess reporting
         """
-        self.value += other_counter_value.value
+        if self.value:
+            if other_counter_value.value:
+                self.value += other_counter_value.value
+        else:
+            self.value = other_counter_value.value
 
 
 class AverageCounterValue(CounterValueBase):
     """ Counter values that are averaged upon merges
     """
 
-    value = property(lambda self: sum(self._values, 0.0) / len(self._values))
+    @property
+    def value(self):
+        if not self._values:
+            return None
+        sum_of_counts = sum([c for v,c in self._values],0)
+        return sum([v*c for v,c in self._values], 0.0) / sum_of_counts
 
-    def __init__(self, value):
-        self._values = [value]
+    def __init__(self, value, agg_count):
+        """
+            value - the average counter to store
+            agg_count - the number of elements that was averaged in value. Important for proper merging.
+        """
+        self._values = [(value, agg_count)] if value is not None else []
 
     def merge_with(self, other_counter_value):
         """ updates this CounterValue with information of another. Used for multiprocess reporting

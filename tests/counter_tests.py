@@ -235,13 +235,14 @@ class CounterTests(unittest.TestCase):
         self.assertEquals(test.get_value().value, 1.5)
 
         sleep(0.7)
-        self.assertEquals(test.get_value().value, 0.0)
+        self.assertEquals(test.get_value().value, None)
 
         test.report_event("test", "value", 1)
         self.assertEquals(test.get_value().value, 1.0)
 
     def test_total_counter(self):
         test = TotalCounter("test")
+        self.assertEquals(test.get_value().value, None)
         test.report_event("test", "value", 1)
         test.report_event("test", "value", 2)
         self.assertEquals(test.get_value().value, 3)
@@ -317,14 +318,18 @@ class CounterTests(unittest.TestCase):
             unregister_counter(counter=c)
 
     def test_average_counter_value(self):
-        a = AverageCounterValue(1)
-        b = AverageCounterValue(3)
+        a = AverageCounterValue(1,1)
+        b = AverageCounterValue(3,3)
         a.merge_with(b)
-        self.assertEquals(a.value, 2.0)
+        b = AverageCounterValue(None,0)
+        a.merge_with(b)
+        self.assertEquals(a.value, 2.5)
 
     def test_accumulative_counter_value(self):
         a = AccumulativeCounterValue(1)
         b = AccumulativeCounterValue(3)
+        a.merge_with(b)
+        b = AccumulativeCounterValue(None)
         a.merge_with(b)
         self.assertEquals(a.value, 4)
 

@@ -61,9 +61,6 @@ class Plugin(object):
                     "title" : "Title",
                     "info"  : "Some info",
                     "category" : "PyCounters"
-                    "pyc_ignore_zero_value": False, # tells the munin plugin not to output anything the counter value
-                                                    # is zero. Handy for counter where zero means nothing happened like
-                                                    # Ex. average request time
                 },
                 "data" : [
                     {
@@ -118,7 +115,7 @@ class Plugin(object):
             for data in graph.get("data"):
                 counter = data.get("counter")
                 v = values.get(counter)
-                if (v is not None) and (float(v) != 0.0 or not graph["global"].get("pyc_ignore_zero_value",False)):
+                if v is not None:
                     _fprint("%s.value %s", self.counter_id_to_munin_id(counter), v)
 
     def output_config(self, config):

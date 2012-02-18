@@ -12,7 +12,7 @@ class EventCounter(TriggerMixin, BaseCounter):
     """
 
     def __init__(self, name, events=None):
-        self.value = 0L
+        self.value = None
         super(EventCounter, self).__init__(name)
 
     def _get_value(self):
@@ -34,7 +34,7 @@ class TotalCounter(AutoDispatch, BaseCounter):
     """
 
     def __init__(self, name, events=None):
-        self.value = 0L
+        self.value = None
         super(TotalCounter, self).__init__(name, events=events)
 
     def _get_value(self):
@@ -67,11 +67,11 @@ class AverageWindowCounter(AutoDispatch, BaseCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values:
-            v = 0.0
+            v = None
         else:
             v = sum(self.values, 0.0) / len(self.values)
 
-        return AverageCounterValue(v)
+        return AverageCounterValue(v,len(self.values))
 
     def _trim_window(self):
         window_limit = self._get_current_time() - self.window_size
