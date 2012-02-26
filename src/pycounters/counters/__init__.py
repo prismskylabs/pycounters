@@ -158,6 +158,13 @@ class ThreadTimeCategorizer(BaseListener):
         for cat in categories:
             self.category_timers[cat] = timer_class()
 
+    def get_times(self):
+        ret = []
+        for k,v in self.category_timers.iteritems():
+            ret.append((self.name + "." + k,v.get_accumulated_time()))
+        return ret
+
+
     def report_event(self, name, property, param):
         if property == "start":
             cat_timer = self.category_timers.get(name)
@@ -181,8 +188,8 @@ class ThreadTimeCategorizer(BaseListener):
 
     def raise_value_events(self, clear=False):
         """ raises category total time as value events. """
-        for k, v in self.category_timers.iteritems():
-            THREAD_DISPATCHER.dispatch_event(self.name + "." + k, "value", v.get_accumulated_time())
+        for k, v in self.get_times():
+            THREAD_DISPATCHER.dispatch_event(k, "value", v)
 
         if clear:
             self.category_timers.clear()
