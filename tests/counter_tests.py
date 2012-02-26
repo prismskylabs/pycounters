@@ -2,12 +2,12 @@ import os
 import unittest
 from time import sleep
 
-from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting, report_value
+from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting, report_value, output_report
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER, EventDispatcher
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
-from pycounters.counters.base import BaseCounter, Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
+from pycounters.counters.base import Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
 from pycounters.reporters import JSONFileReporter
-from pycounters.reporters.base import BaseReporter, GLOBAL_REPORTING_CONTROLLER
+from pycounters.reporters.base import BaseReporter
 from pycounters.shortcuts import count, value, frequency, time
 from . import EventCatcher
 
@@ -173,7 +173,7 @@ class CounterTests(unittest.TestCase):
         register_reporter(v)
 
         report_value("test",1)
-        GLOBAL_REPORTING_CONTROLLER.report()
+        output_report()
         self.assertEquals(v.values_wo_metadata,dict(test1=1,test2=1))
 
         unregister_counter(counter=test1)
@@ -370,7 +370,7 @@ class CounterTests(unittest.TestCase):
         try:
             test1.report_event("test1", "value", 2)
 
-            GLOBAL_REPORTING_CONTROLLER.report()
+            output_report()
             report = JSONFileReporter.safe_read(filename)
             report = dict([(k,v) for k,v in report.iteritems() if not k.startswith("__")])
             self.assertEqual(report, {"test1": 2})

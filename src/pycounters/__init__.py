@@ -56,6 +56,13 @@ def unregister_counter(counter=None, name=None):
     base.GLOBAL_REGISTRY.remove_counter(counter=counter, name=name)
 
 
+def output_report():
+    """
+      Manually cause the current values all registered counters to be reported.
+    """
+    reporters.base.GLOBAL_REPORTING_CONTROLLER.report()
+
+
 def start_auto_reporting(seconds=300):
     """
     Start reporting in a background thread. Reporting frequency is set by seconds param.

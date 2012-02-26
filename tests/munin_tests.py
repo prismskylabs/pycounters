@@ -1,10 +1,9 @@
 import os
 import unittest
 
-from pycounters import register_counter, unregister_counter, register_reporter, unregister_reporter
+from pycounters import register_counter, unregister_counter, register_reporter, unregister_reporter, output_report
 from pycounters.counters import EventCounter
 from pycounters.reporters import JSONFileReporter
-from pycounters.reporters.base import GLOBAL_REPORTING_CONTROLLER
 from pycounters.utils import munin
 
 
@@ -66,7 +65,7 @@ class MuninTests(unittest.TestCase):
         try:
             test1.report_event("test1", "value", 2)
 
-            GLOBAL_REPORTING_CONTROLLER.report()
+            output_report()
 
             plugin.output_data(cfg)
             self.assertEqual(self.get_last_plugin_output(), ["multigraph test", "test1.value 2"])

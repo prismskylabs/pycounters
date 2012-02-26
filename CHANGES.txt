@@ -8,6 +8,7 @@
     - Munin plugin now ignores old reports by default
     - Counters which doesn't have any value now return None instead of 0.
     - Fixed an issue with aggregation of average values when not all sources had the same value
+    - Added output_report() to allow manual initiation of reports.
 
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.
