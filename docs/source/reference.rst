@@ -69,6 +69,7 @@ Reporters
 
 .. autofunction:: unregister_reporter
 
+.. autofunction:: output_report
 
 .. autofunction:: start_auto_reporting
 

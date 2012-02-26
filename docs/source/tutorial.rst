@@ -66,7 +66,7 @@ The number of requests per second the server serves is exactly the number of tim
 The average time for handling a request is exactly the average execution time of handle()
 
 Both of these metrics are measure by decorating handle() the :ref:`shortcut <shortcuts>` decorators
-:meth:`occurrence <pycounters.shortcuts.frequency>` and :meth:`occurrence <pycounters.shortcuts.time>`: ::
+:meth:`frequency <pycounters.shortcuts.frequency>` and :meth:`time <pycounters.shortcuts.time>`: ::
 
     import SocketServer
     from pycounters import shortcuts
@@ -186,7 +186,7 @@ your imports too). However, we will go another way about it.
 
 PyCounter's event reporting is very light weight. It practically does nothing if no counter is defined to capture those
 events. Because of this, it is a good idea to report all important events through the code and choose later what you
-exactly want analyzed. To do this we must separate th event reporting from the definition of counters.
+exactly want analyzed. To do this we must separate event reporting from the definition of counters.
 
 .. Note::
   This approach also means you can analyze things differently on a single thread, by installing thread specific
@@ -300,7 +300,42 @@ Here is the complete code with all the changes so far (also available at the PyC
         server.serve_forever()
 
 ------------------------
-Step 5 - Utilities
+Step 5 - More about Events and Counters
+------------------------
+
+In the above example, the MyTCPHandler::handle method is decorated with two short functions:
+:meth:`frequency <pycounters.shortcuts.frequency>` and :meth:`time <pycounters.shortcuts.time>`: . This is the easiest way
+to set up PyCounters to measure things but it has some down sides. First, every shortcut decorate throws it's own events.
+That means that for every execution of the handle method, four events are sent. That is inefficient. Second, and more importantly,
+it also means that Counters definition are spread around the code.
+
+In bigger projects it is better to separate event throwing from counting. For example, we can decorate the handle function with
+:meth:`report_start_end <pycounters.report_start_end>`: ::
+
+    @pycounters.report_start_end("request")
+    def handle(self):
+        # self.request is the TCP socket connected to the client
+
+
+And define two counters to analyze 'different' statistics about this function: ::
+
+    avg_req_time = counters.AverageTimeCounter("requests_time",events=["request"])
+    register_counter(avg_req_time)
+
+    req_per_sec = counters.FrequencyCounter("requests_frequency",events=["request"])
+    register_counter(req_per_sec)
+
+.. note:: Multiple counters with different names can be set up to analyze the same event using the events argument in their constructor.
+
+Doing things this way has a couple of advantages:
+
+    * It is conceptually cleaner - you report what happened and measure multiple aspects of it
+    * It is more flexible - you can easily analyse more things about your code by simply adding counters.
+    * You can decide at runtime what to measure (by changing registered counters)
+
+
+------------------------
+Step 6 - Utilities
 ------------------------
 
 In the example so far, we've outputted the collected metrics to a JSON file. Using that JSON file, we can easily build
@@ -371,7 +406,7 @@ Try it out (after the server has run for more than 5 minutes and a report was ou
 running ``python munin_plugin config`` and ``python munin_plugin`` .
 
 -----------------------------
-Step 6 - Multiprocess support
+Step 7 - Multiprocess support
 -----------------------------
 
 Some application (like a web server) do not run in a single process. Still, you want to collect global metrics like the

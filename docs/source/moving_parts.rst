@@ -48,8 +48,8 @@ Counters
 --------------------
 
 All the "smartness" of PyCounters is bundled withing a set of Counters. Counters are in charge of intercepting and interpreting
-events reported by different parts of the program. As mentioned before, you can register a Counter when you want to analyze events
-with identical names. You do so by using the :py:func:`register_counter` function: ::
+events reported by different parts of the program. As mentioned before, you can register a Counter when you want to analyze specific events
+(by default events of identical name). You do so by using the :py:func:`register_counter` function: ::
 
     counter = AverageWindowCounter("some_name")
     register_counter(counter)
@@ -81,7 +81,16 @@ Reporters are used to collect a report from the currently registered Counters. R
 will have a performance impact.
 
 At the moment PyCounters can only output to python logs and JSON files. For example, to output to logs, create
-an instance of :py:obj:`LogReporter` and turn on auto reporting (using :py:meth:`start_auto_reporting` .)
+an instance of :obj:`LogReporter <pycounters.reporters.LogReporter>` . You can then manually output reports
+(using :func:`output_report <pycounters.output_report>`) or
+turn on auto reporting (using :func:`start_auto_reporting <pycounters.start_auto_reporting>` .) ::
+
+    reporter=pycounters.reporters.LogReporter(logging.getLogger("counters"))
+    pycounters.register_reporter(reporter)
+    #... some where later
+    pycounters.output_report()
+
+
 
 
 .. _shortcuts:

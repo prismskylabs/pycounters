@@ -52,7 +52,7 @@ Count the average wall clock time a function runs::
         """ some interesting work like serving a request """
         pass
 
-.. note:: You need to specify the name of the counter to be used. This allows for counting multiple function using a single counter
+.. note:: PyCounter's shortcut decorator will use the function name in it's output. This can be configured (see :ref:`shortcut_functions`).
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Measuring custom event frequency
