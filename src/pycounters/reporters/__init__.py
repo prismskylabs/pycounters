@@ -64,11 +64,12 @@ class JSONFileReporter(BaseReporter):
     def safe_write(value, filename):
         """ safely writes value in a JSON format to file
         """
-        fd = os.open(filename, os.O_CREAT | os.O_TRUNC | os.O_WRONLY)
+        fd = os.open(filename, os.O_CREAT | os.O_WRONLY)
         JSONFileReporter._lockfile(fd)
         try:
 
             file = os.fdopen(fd, "w")
+            file.truncate()
             json.dump(value, file)
         finally:
             JSONFileReporter._unlockfile(fd)

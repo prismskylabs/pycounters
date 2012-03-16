@@ -1,3 +1,6 @@
+0.5:
+    - Fixed a locking issue with JSON output files
+
 0.4:
     - added a patcher util class to allow injecting events to existing libraries/code.
     - decoupled counter names from the names of events they count. Still, by default a counter will count events with
@@ -9,6 +12,7 @@
     - Counters which doesn't have any value now return None instead of 0.
     - Fixed an issue with aggregation of average values when not all sources had the same value
     - Added output_report() to allow manual initiation of reports.
+
 
 0.3:
     - Added a manifest.in file, so that CHANGES.txt will come along.
