@@ -13,7 +13,7 @@ class EventCounter(TriggerMixin, BaseCounter):
 
     def __init__(self, name, events=None):
         self.value = None
-        super(EventCounter, self).__init__(name)
+        super(EventCounter, self).__init__(name,events=events)
 
     def _get_value(self):
         return AccumulativeCounterValue(self.value)

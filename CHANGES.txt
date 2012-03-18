@@ -1,5 +1,6 @@
 0.5:
-    - Fixed a locking issue with JSON output files
+    - Fixed - locking issue with JSON output files
+    - Fixed - EventCounter did not respond to events keyword argument
 
 0.4:
     - added a patcher util class to allow injecting events to existing libraries/code.

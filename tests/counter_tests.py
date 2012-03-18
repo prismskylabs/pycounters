@@ -253,7 +253,7 @@ class CounterTests(unittest.TestCase):
 
     def test_basic_reporter(self):
 
-        test1 = EventCounter("test1")
+        test1 = EventCounter("test1",events=["test_event"])
         register_counter(test1)
 
         v = SimpleValueReporter()
@@ -262,17 +262,17 @@ class CounterTests(unittest.TestCase):
 
 
         try:
-            test1.report_event("test1", "value", 2)
+            test1.report_event("test_event", "value", 2)
 
             sleep(0.1)
             self.assertEqual(v.values_wo_metadata, {"test1": 2})
 
-            test1.report_event("test1", "value", 1)
+            test1.report_event("test_event", "value", 1)
             sleep(0.05)
             self.assertEqual(v.values_wo_metadata, {"test1": 3})
 
             stop_auto_reporting()
-            test1.report_event("test1", "value", 1)
+            test1.report_event("test_event", "value", 1)
             sleep(0.05)
             self.assertEqual(v.values_wo_metadata, {"test1": 3})
         finally:
