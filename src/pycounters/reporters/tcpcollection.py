@@ -78,8 +78,11 @@ class CollectingNodeProxy(BaseRequestHandler):
 
             self.debug_log.info("Connected to node %s", node_id)
             self.id = node_id
+            self.debug_log.debug("Registering node %s with proxy.", node_id)
             self.leader.register_node_proxy(self)
+            self.debug_log.debug("Sending ack back to node %s.", node_id)
             self.send("ack")
+            self.debug_log.debug("Done handling request from node %s.", node_id)
         except Exception as e:
             st = traceback.format_exc()
             self.debug_log.exception("Got an exception while dealing with an incoming request: %s, st:", e, st)
@@ -304,7 +307,7 @@ class CollectingNode(object):
             try:
                 self.debug_log.debug("%s: Trying to connect to a lader on %s.", self.id, cur_host_port)
                 candidate_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                candidate_socket.settimeout(None)
+                candidate_socket.settimeout(10)
                 candidate_socket.connect(cur_host_port)
 
                 self.socket = candidate_socket
@@ -322,12 +325,18 @@ class CollectingNode(object):
         self.rfile = self.socket.makefile('rb', 1)
         self.wfile = self.socket.makefile('wb', 1)
         if ping_only:
+            self.debug_log.debug("Sending a ping to server.")
             self.send("ping")
         else:
+            self.debug_log.debug("%s: Sending id to server.",self.id)
             self.send(self.id)
         if self.receive() != "ack":
             self._close_socket()
             raise Exception("Failed to get ack from leader.")
+
+        self.debug_log.debug("%s: Successfully connected to server.",self.id)
+
+        self.socket.settimeout(None) # needs to be without a time so recieving thread will block.
 
         if ping_only:
             self._close_socket()
