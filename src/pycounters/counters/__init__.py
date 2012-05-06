@@ -13,7 +13,7 @@ class EventCounter(TriggerMixin, BaseCounter):
 
     def __init__(self, name, events=None):
         self.value = None
-        super(EventCounter, self).__init__(name,events=events)
+        super(EventCounter, self).__init__(name, events=events)
 
     def _get_value(self):
         return AccumulativeCounterValue(self.value)
@@ -71,7 +71,7 @@ class AverageWindowCounter(AutoDispatch, BaseCounter):
         else:
             v = sum(self.values, 0.0) / len(self.values)
 
-        return AverageCounterValue(v,len(self.values))
+        return AverageCounterValue(v, len(self.values))
 
     def _trim_window(self):
         window_limit = self._get_current_time() - self.window_size
@@ -160,10 +160,9 @@ class ThreadTimeCategorizer(BaseListener):
 
     def get_times(self):
         ret = []
-        for k,v in self.category_timers.iteritems():
-            ret.append((self.name + "." + k,v.get_accumulated_time()))
+        for k, v in self.category_timers.iteritems():
+            ret.append((self.name + "." + k, v.get_accumulated_time()))
         return ret
-
 
     def report_event(self, name, property, param):
         if property == "start":

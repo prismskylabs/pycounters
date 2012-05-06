@@ -11,7 +11,6 @@ class MuninTests(unittest.TestCase):
 
     filename = "/tmp/json_test.txt"
 
-
     def make_basic_cfg(self):
         return [
                         {
@@ -23,14 +22,14 @@ class MuninTests(unittest.TestCase):
                         }
                 ]
 
-
     def get_last_plugin_output(self):
         return self.output
+
     def clear_last_plugin_output(self):
         while self.output:
             self.output.pop()
 
-    def create_plugin(self,cfg):
+    def create_plugin(self, cfg):
         self.output = []
 
         def fake_print(fmt, *args):
@@ -38,9 +37,6 @@ class MuninTests(unittest.TestCase):
 
         munin._fprint = fake_print
         return munin.Plugin(json_output_file=self.filename, config=cfg)
-
-
-
 
     def test_munin_cfg(self):
         cfg = self.make_basic_cfg()
@@ -70,12 +66,12 @@ class MuninTests(unittest.TestCase):
             plugin.output_data(cfg)
             self.assertEqual(self.get_last_plugin_output(), ["multigraph test", "test1.value 2"])
 
-            plugin.max_file_age_in_seconds=0.00001
+            plugin.max_file_age_in_seconds = 0.00001
             self.clear_last_plugin_output()
             plugin.output_data(cfg)
             self.assertEqual(self.get_last_plugin_output(), [])
 
-            plugin.max_file_age_in_seconds=None
+            plugin.max_file_age_in_seconds = None
             plugin.output_data(cfg)
             self.assertEqual(self.get_last_plugin_output(), ["multigraph test", "test1.value 2"])
 
@@ -83,5 +79,3 @@ class MuninTests(unittest.TestCase):
         finally:
             unregister_counter(counter=test1)
             unregister_reporter(jsfr)
-
-

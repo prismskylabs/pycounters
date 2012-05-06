@@ -16,7 +16,7 @@ class CounterValuesCollector(object):
     def get_values(self):
         return self.add_metadata_to_values(GLOBAL_REGISTRY.get_values().values)
 
-    def add_metadata_to_values(self,values):
+    def add_metadata_to_values(self, values):
         values["__collection_time__"] = time.time()
         return values
 

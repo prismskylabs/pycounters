@@ -157,6 +157,7 @@ class CollectorTests(unittest.TestCase):
             role=CollectingRole.AUTO_ROLE)
         node2 = MultiProcessCounterValueCollector(collecting_address=[("", 5567), ("", 5568)], debug_log=debug_log,
             role=CollectingRole.AUTO_ROLE)
+
         try:
             self.assertEqual(node1.actual_role, CollectingRole.LEADER_ROLE)
             self.assertEqual(node2.actual_role, CollectingRole.NODE_ROLE)

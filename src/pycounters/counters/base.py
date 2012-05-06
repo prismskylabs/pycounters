@@ -157,8 +157,8 @@ class AverageCounterValue(CounterValueBase):
     def value(self):
         if not self._values:
             return None
-        sum_of_counts = sum([c for v,c in self._values],0)
-        return sum([v*c for v,c in self._values], 0.0) / sum_of_counts
+        sum_of_counts = sum([c for v, c in self._values], 0)
+        return sum([v * c for v, c in self._values], 0.0) / sum_of_counts
 
     def __init__(self, value, agg_count):
         """

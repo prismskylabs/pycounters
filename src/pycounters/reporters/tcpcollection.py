@@ -328,15 +328,15 @@ class CollectingNode(object):
             self.debug_log.debug("Sending a ping to server.")
             self.send("ping")
         else:
-            self.debug_log.debug("%s: Sending id to server.",self.id)
+            self.debug_log.debug("%s: Sending id to server.", self.id)
             self.send(self.id)
         if self.receive() != "ack":
             self._close_socket()
             raise Exception("Failed to get ack from leader.")
 
-        self.debug_log.debug("%s: Successfully connected to server.",self.id)
+        self.debug_log.debug("%s: Successfully connected to server.", self.id)
 
-        self.socket.settimeout(None) # needs to be without a time so recieving thread will block.
+        self.socket.settimeout(None)  # needs to be without a time so recieving thread will block.
 
         if ping_only:
             self._close_socket()
