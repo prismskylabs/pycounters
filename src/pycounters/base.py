@@ -34,7 +34,10 @@ class CounterRegistry(object):
     def remove_counter(self, counter=None, name=None):
         with self.lock:
             if counter:
-                name = counter.name
+               name = counter.name
+
+            if not counter:
+               counter = self.registry[name]
 
             if not name:
                 raise Exception("trying to remove a counter from perfomance registry but no counter or name supplied.")
