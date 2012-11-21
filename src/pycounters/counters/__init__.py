@@ -100,10 +100,24 @@ class FrequencyCounter(TriggerMixin, AverageWindowCounter):
         return AccumulativeCounterValue(sum(self.values, 0.0) / (self._get_current_time() - self.times[0]))
 
 
+class WindowCounter(TriggerMixin, AverageWindowCounter):
+    """ Counts number of events in window """
+    def _get_value(self):
+        self._trim_window()
+        if not self.values or len(self.values) < 1:
+            return AccumulativeCounterValue(0.0)
+        return AccumulativeCounterValue(sum(self.values, 0.0))
+
+    def get_oldest_time(self):
+        with self.lock:
+            if not self.times:
+                return None
+            return self.times[0]
+
+
 class AverageTimeCounter(TimerMixin, AverageWindowCounter):
     """ Counts the average time between start and end events
     """
-
     pass
 
 
