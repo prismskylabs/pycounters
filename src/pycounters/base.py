@@ -34,10 +34,10 @@ class CounterRegistry(object):
     def remove_counter(self, counter=None, name=None):
         with self.lock:
             if counter:
-               name = counter.name
+                name = counter.name
 
             if not counter:
-               counter = self.registry[name]
+                counter = self.registry[name]
 
             if not name:
                 raise Exception("trying to remove a counter from perfomance registry but no counter or name supplied.")
@@ -94,18 +94,6 @@ class EventLogger(BaseListener):
         if self.property_filter and not self.property_filter.match(property):
             return
         self.logger.log(self.logging_level, "Event: name=%s property=%s param=%s", name, property, param)
-
-
-class RegistryListener(BaseListener):
-
-    def __init__(self, registry):
-        """ Registry = CounterRegistry to dispatch events to """
-        self.registry = registry
-
-    def report_event(self, name, property, param):
-        c = self.registry.get_counter(name, throw=False)
-        if c:
-            c.report_event(name, property, param)
 
 
 class EventDispatcher(object):

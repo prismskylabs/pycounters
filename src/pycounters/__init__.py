@@ -22,7 +22,7 @@ def report_start(name):
 
 def report_end(name):
     """ reports an event's end.
-        NOTE: you *must* have fired off a corresponding event end with report_start
+        NOTE: you *must* have fired off a corresponding event start with report_start
     """
     base.THREAD_DISPATCHER.dispatch_event(name, "end", None)
 
