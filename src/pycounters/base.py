@@ -4,100 +4,7 @@ from threading import RLock, local as thread_local
 import re
 
 
-class CounterRegistry(object):
-
-    def __init__(self, dispatcher):
-        super(CounterRegistry, self).__init__()
-        self.lock = RLock()
-        self.dispatcher = dispatcher
-        self.registry = dict()
-
-    def get_values(self):
-        values = CounterValueCollection()
-        with self.lock:
-            for name, c in self.registry.iteritems():
-                values[name] = c.get_value()
-
-        return values
-
-    def add_counter(self, counter, throw=True):
-        with self.lock:
-            if counter.name in self.registry:
-                if throw:
-                    raise Exception("A counter named %s is already defined" % (counter.name))
-                return False
-
-            self.registry[counter.name] = counter
-            self.dispatcher.add_listener(counter)
-            return True
-
-    def remove_counter(self, counter=None, name=None):
-        with self.lock:
-            if counter:
-                name = counter.name
-
-            if not counter:
-                counter = self.registry[name]
-
-            if not name:
-                raise Exception("trying to remove a counter from perfomance registry but no counter or name supplied.")
-
-            self.dispatcher.remove_listener(counter)
-            self.registry.pop(name)
-
-    def get_counter(self, name, throw=True):
-
-        with self.lock:
-            c = self.registry.get(name)
-
-            if not c and throw:
-                raise Exception("No counter named '%s' found " % (name, ))
-
-            return c
-
-
-class BaseListener(object):
-
-    def __init__(self, events=None):
-        """
-            events - a list of events name to listen to. Use None for all.
-        """
-        self.events = events
-
-    def report_event(self, name, property, param):
-        """ reports an event to this listener """
-        raise NotImplementedError("report_event is not implemented")
-
-
-class EventLogger(BaseListener):
-
-    def __init__(self, logger, name_filter=None, property_filter=None, logging_level=logging.DEBUG):
-        super(EventLogger, self).__init__()
-        self.logger = logger
-        self.logging_level = logging_level
-        self.name_filter = None
-        if name_filter:
-            if isinstance(name_filter, basestring):
-                self.name_filter = re.compile(name_filter)
-            else:
-                self.name_filter = name_filter
-
-        if property_filter:
-            if isinstance(property_filter, basestring):
-                self.property_filter = re.compile(property_filter)
-            else:
-                self.property_filter = property_filter
-
-    def report_event(self, name, property, param):
-        if self.name_filter and not self.name_filter.match(name):
-            return
-        if self.property_filter and not self.property_filter.match(property):
-            return
-        self.logger.log(self.logging_level, "Event: name=%s property=%s param=%s", name, property, param)
-
-
 class EventDispatcher(object):
-
     def __init__(self):
         self.listeners = dict()
         self.listeners[None] = set()
@@ -135,6 +42,58 @@ class EventDispatcher(object):
                     s.remove(listener)
 
 
+class CounterRegistry(object):
+
+    def __init__(self, dispatcher):
+        super(CounterRegistry, self).__init__()
+        self.lock = RLock()
+        self.dispatcher = dispatcher
+        self.registry = dict()
+
+    def get_values(self):
+        values_collection = CounterValueCollection()
+        with self.lock:
+            for name, c in self.registry.iteritems():
+                values_collection[name] = c.get_value()
+
+        return values_collection
+
+    def add_counter(self, counter, throw=True):
+        with self.lock:
+            if counter.name in self.registry:
+                if throw:
+                    raise Exception("A counter named %s is already defined" % (counter.name))
+                return False
+
+            self.registry[counter.name] = counter
+            self.dispatcher.add_listener(counter)
+            return True
+
+    def remove_counter(self, counter=None, name=None):
+        with self.lock:
+            if counter:
+                name = counter.name
+
+            if not counter:
+                counter = self.registry[name]
+
+            if not name:
+                raise Exception("trying to remove a counter from perfomance registry but no counter or name supplied.")
+
+            self.dispatcher.remove_listener(counter)
+            self.registry.pop(name)
+
+    def get_counter(self, name, throw=True):
+
+        with self.lock:
+            c = self.registry.get(name)
+
+            if not c and throw:
+                raise Exception("No counter named '%s' found " % (name, ))
+
+            return c
+
+
 class ThreadSpecificDispatcher(thread_local):
     """ A dispatcher handle thread specific dispatching. Also percolates to Global event"""
     ## TODO: work in progress. no clean solution yet.
@@ -167,6 +126,46 @@ GLOBAL_DISPATCHER = EventDispatcher()
 GLOBAL_REGISTRY = CounterRegistry(GLOBAL_DISPATCHER)
 
 THREAD_DISPATCHER = ThreadSpecificDispatcher()
+
+
+class BaseListener(object):
+
+    def __init__(self, events=None):
+        """
+            events - a list of events name to listen to. Use None for all.
+        """
+        self.events = events
+
+    def report_event(self, name, property, param):
+        """ reports an event to this listener """
+        raise NotImplementedError("report_event is not implemented")
+
+
+class EventLogger(BaseListener):
+    """Ask boaz what it is for"""
+    def __init__(self, logger, name_filter=None, property_filter=None, logging_level=logging.DEBUG):
+        super(EventLogger, self).__init__()
+        self.logger = logger
+        self.logging_level = logging_level
+        self.name_filter = None
+        if name_filter:
+            if isinstance(name_filter, basestring):
+                self.name_filter = re.compile(name_filter)
+            else:
+                self.name_filter = name_filter
+
+        if property_filter:
+            if isinstance(property_filter, basestring):
+                self.property_filter = re.compile(property_filter)
+            else:
+                self.property_filter = property_filter
+
+    def report_event(self, name, property, param):
+        if self.name_filter and not self.name_filter.match(name):
+            return
+        if self.property_filter and not self.property_filter.match(property):
+            return
+        self.logger.log(self.logging_level, "Event: name=%s property=%s param=%s", name, property, param)
 
 
 class CounterValueBase(object):

@@ -1,32 +1,13 @@
 from collections import deque
 from copy import copy
 from time import time
-from pycounters.base import THREAD_DISPATCHER, BaseListener
-from pycounters.counters.base import BaseCounter, AutoDispatch, Timer, TimerMixin, TriggerMixin, AccumulativeCounterValue, AverageCounterValue
+from pycounters.base import THREAD_DISPATCHER
+from pycounters.counters.base import BaseCounter
+from pycounters.counters.dispatcher import AutoDispatch, TimerMixin, TriggerMixin
+from pycounters.counters.values import AccumulativeCounterValue, AverageCounterValue,\
+    MinCounterValue, MaxCounterValue
 
 __author__ = 'boaz'
-
-
-class EventCounter(TriggerMixin, BaseCounter):
-    """ Counts the number of times an end event has fired.
-    """
-
-    def __init__(self, name, events=None):
-        self.value = None
-        super(EventCounter, self).__init__(name, events=events)
-
-    def _get_value(self):
-        return AccumulativeCounterValue(self.value)
-
-    def _report_event_value(self, name, value):
-
-        if self.value:
-            self.value += value
-        else:
-            self.value = long(value)
-
-    def _clear(self):
-        self.value = 0L
 
 
 class TotalCounter(AutoDispatch, BaseCounter):
@@ -115,10 +96,48 @@ class WindowCounter(TriggerMixin, AverageWindowCounter):
             return self.times[0]
 
 
+class MaxWindowCounter(AverageWindowCounter):
+    def _get_value(self):
+        self._trim_window()
+        if not self.values or len(self.values) < 1:
+            return MaxCounterValue(0.0)
+        return MaxCounterValue(max(self.values, 0.0))
+
+
+class MinWindowCounter(AverageWindowCounter):
+    def _get_value(self):
+        self._trim_window()
+        if not self.values or len(self.values) < 1:
+            return MinCounterValue(0.0)
+        return MinCounterValue(min(self.values, 0.0))
+
+
 class AverageTimeCounter(TimerMixin, AverageWindowCounter):
     """ Counts the average time between start and end events
     """
     pass
+
+
+class EventCounter(TriggerMixin, BaseCounter):
+    """ Counts the number of times an end event has fired.
+    """
+
+    def __init__(self, name, events=None):
+        self.value = None
+        super(EventCounter, self).__init__(name, events=events)
+
+    def _get_value(self):
+        return AccumulativeCounterValue(self.value)
+
+    def _report_event_value(self, name, value):
+
+        if self.value:
+            self.value += value
+        else:
+            self.value = long(value)
+
+    def _clear(self):
+        self.value = 0L
 
 
 class ValueAccumulator(AutoDispatch, BaseCounter):
@@ -159,50 +178,3 @@ class ValueAccumulator(AutoDispatch, BaseCounter):
 
             if clear:
                 self._clear()
-
-
-class ThreadTimeCategorizer(BaseListener):
-    """ A class to divide the time spent by thread across multiple categories. Categories are mutually exclusive. """
-
-    def __init__(self, name, categories, timer_class=Timer):
-        super(ThreadTimeCategorizer, self).__init__()
-        self.name = name
-        self.category_timers = dict()
-        self.timer_stack = list()  # a list of strings of paused timers
-        for cat in categories:
-            self.category_timers[cat] = timer_class()
-
-    def get_times(self):
-        ret = []
-        for k, v in self.category_timers.iteritems():
-            ret.append((self.name + "." + k, v.get_accumulated_time()))
-        return ret
-
-    def report_event(self, name, property, param):
-        if property == "start":
-            cat_timer = self.category_timers.get(name)
-            if not cat_timer:
-                return
-
-            if self.timer_stack:
-                self.timer_stack[-1].pause()
-
-            cat_timer.start()
-            self.timer_stack.append(cat_timer)
-
-        elif property == "end":
-            cat_timer = self.category_timers.get(name)  # if all went well it is there...
-            if not cat_timer:
-                return
-            cat_timer.pause()
-            self.timer_stack.pop()
-            if self.timer_stack:
-                self.timer_stack[-1].start()  # continute last paused timer
-
-    def raise_value_events(self, clear=False):
-        """ raises category total time as value events. """
-        for k, v in self.get_times():
-            THREAD_DISPATCHER.dispatch_event(k, "value", v)
-
-        if clear:
-            self.category_timers.clear()
