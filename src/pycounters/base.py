@@ -3,6 +3,8 @@ import logging
 from threading import RLock, local as thread_local
 import re
 
+from .values import CounterValueCollection
+
 
 class EventDispatcher(object):
     def __init__(self):
@@ -168,40 +170,3 @@ class EventLogger(BaseListener):
         self.logger.log(self.logging_level, "Event: name=%s property=%s param=%s", name, property, param)
 
 
-class CounterValueBase(object):
-    """ a base class for counter values. Deals with defining merge semantics etc.
-    """
-
-    def __init__(self, value):
-        self.value = value
-
-    def merge_with(self, other_counter_value):
-        """ updates this CounterValue with information of another. Used for multiprocess reporting
-        """
-        raise NotImplementedError("merge_with should be implemented in class inheriting from CounterValueBase")
-
-
-class CounterValueCollection(dict):
-    """ a dictionary of counter values, adding support for dictionary merges and getting a value only dict.
-    """
-
-    @property
-    def values(self):
-        r = {}
-        for k, v in self.iteritems():
-            r[k] = v.value if hasattr(v, "value") else v
-
-        return r
-
-    def merge_with(self, other_counter_value_collection):
-        for k, v in other_counter_value_collection.iteritems():
-            mv = self.get(k)
-            if mv is None:
-                # nothing local, just set it
-                self[k] = v
-            elif isinstance(mv, CounterValueBase):
-                if not isinstance(v, CounterValueBase):
-                    raise Exception("Can't merge with CounterValueCollection. Other Collection doesn't have a mergeable value for key %s" % (k, ))
-                mv.merge_with(v)
-            else:
-                raise Exception("Can't merge with CounterValueCollection. Local key $s doesn't have a mergeable value." % (k, ))

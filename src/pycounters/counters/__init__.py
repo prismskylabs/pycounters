@@ -4,7 +4,7 @@ from time import time
 from pycounters.base import THREAD_DISPATCHER
 from pycounters.counters.base import BaseCounter
 from pycounters.counters.dispatcher import AutoDispatch, TimerMixin, TriggerMixin
-from pycounters.counters.values import AccumulativeCounterValue, AverageCounterValue,\
+from pycounters.values import AccumulativeCounterValue, AverageCounterValue,\
     MinCounterValue, MaxCounterValue
 
 __author__ = 'boaz'

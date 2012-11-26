@@ -48,6 +48,3 @@ class BaseCounter(BaseListener):
     def _clear(self):
         """ implement this in sub classes """
         raise NotImplementedError("_clear is not implemented")
-
-
-
