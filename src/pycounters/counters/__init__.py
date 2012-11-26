@@ -101,7 +101,10 @@ class MaxWindowCounter(AverageWindowCounter):
         self._trim_window()
         if not self.values or len(self.values) < 1:
             return MaxCounterValue(0.0)
-        return MaxCounterValue(max(self.values, 0.0))
+        val = max(self.values)
+        if val is None:
+            return MaxCounterValue(0.0)
+        return MaxCounterValue(float(val))
 
 
 class MinWindowCounter(AverageWindowCounter):
@@ -109,7 +112,10 @@ class MinWindowCounter(AverageWindowCounter):
         self._trim_window()
         if not self.values or len(self.values) < 1:
             return MinCounterValue(0.0)
-        return MinCounterValue(min(self.values, 0.0))
+        val = min(self.values)
+        if val is None:
+            return MinCounterValue(0.0)
+        return MinCounterValue(float(val))
 
 
 class AverageTimeCounter(TimerMixin, AverageWindowCounter):

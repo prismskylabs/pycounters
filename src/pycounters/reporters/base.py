@@ -297,7 +297,6 @@ class ReportingController(object):
                     self._handle_background_error(e)
                 except:
                     pass
-
             time.sleep(self._auto_reporting_cycle)
 
 
