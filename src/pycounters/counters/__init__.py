@@ -48,7 +48,7 @@ class AverageWindowCounter(AutoDispatch, BaseCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values:
-            v = 0.0
+            v = None
         else:
             v = sum(self.values, 0.0) / len(self.values)
 
