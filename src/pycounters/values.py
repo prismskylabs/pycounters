@@ -1,3 +1,4 @@
+from exceptions import NotImplementedError
 
 
 class CounterValueBase(object):
