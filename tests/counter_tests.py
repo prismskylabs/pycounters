@@ -2,12 +2,18 @@ import os
 import unittest
 from time import sleep
 
-from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, start_auto_reporting, unregister_reporter, stop_auto_reporting, report_value, output_report
+from pycounters import register_counter, report_start_end, unregister_counter, register_reporter, \
+    start_auto_reporting, unregister_reporter, stop_auto_reporting, report_value, output_report
+
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER, EventDispatcher
-from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, ValueAccumulator, ThreadTimeCategorizer, TotalCounter
-from pycounters.counters.base import Timer, ThreadLocalTimer, AverageCounterValue, AccumulativeCounterValue, MinCounterValue, MaxCounterValue
+
+from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, \
+    ValueAccumulator, ThreadTimeCategorizer, TotalCounter, Timer, ThreadLocalTimer, AccumulativeCounterValue, \
+    MinCounterValue, MaxCounterValue, AverageCounterValue
+
 from pycounters.reporters import JSONFileReporter
 from pycounters.reporters.base import BaseReporter
+
 from pycounters.shortcuts import count, value, frequency, time
 from . import EventCatcher
 
@@ -22,13 +28,15 @@ class FakeThreadLocalTimer(ThreadLocalTimer):
             self.curtime = 0
         return self.curtime
 
+
 class SimpleValueReporter(BaseReporter):
-    def output_values(self,counter_values):
+    def output_values(self, counter_values):
         self.last_values = counter_values
 
     @property
     def values_wo_metadata(self):
-        return dict([(k,v) for k,v in self.last_values.iteritems() if not k.startswith("__")])
+        return dict([(k, v) for k, v in self.last_values.iteritems() if not k.startswith("__")])
+
 
 class FakeTimer(Timer):
     """ causes time to behave rationaly so it can be tested. """
@@ -39,6 +47,7 @@ class FakeTimer(Timer):
         else:
             self.curtime = 0
         return self.curtime
+
 
 class CounterTests(unittest.TestCase):
     def test_ThreadTimeCategorizer(self):
@@ -118,19 +127,17 @@ class CounterTests(unittest.TestCase):
 
             f()
 
-
             @report_start_end("h")
             def g():
                 pass
 
             g()
 
-
             def raises():
-                with report_start_end():pass
+                with report_start_end():
+                    pass
 
-
-            self.assertRaises(Exception,raises)
+            self.assertRaises(Exception, raises)
 
         self.assertEqual(events,
                 [
@@ -141,8 +148,6 @@ class CounterTests(unittest.TestCase):
                 ]
             )
 
-
-
     def test_Thread_Timer(self):
         f = FakeThreadLocalTimer()
         f.start()
@@ -152,9 +157,8 @@ class CounterTests(unittest.TestCase):
         f.start()
         self.assertEqual(f.stop(), 2)
 
-
     def test_one_counter_multiple_events(self):
-        test = TotalCounter("test",events=["test1","test2"])
+        test = TotalCounter("test", events=["test1", "test2"])
         register_counter(test)
 
         test.report_event("test1", "value", 1)
@@ -164,25 +168,22 @@ class CounterTests(unittest.TestCase):
         unregister_counter(counter=test)
 
     def test_multiple_counters_one_event(self):
-        test1 = TotalCounter("test1",events=["test"])
+        test1 = TotalCounter("test1", events=["test"])
         register_counter(test1)
-        test2 = TotalCounter("test2",events=["test"])
+        test2 = TotalCounter("test2", events=["test"])
         register_counter(test2)
 
         v = SimpleValueReporter()
         register_reporter(v)
 
-        report_value("test",1)
+        report_value("test", 1)
         output_report()
-        self.assertEquals(v.values_wo_metadata,dict(test1=1,test2=1))
+        self.assertEquals(v.values_wo_metadata, dict(test1=1, test2=1))
 
         unregister_counter(counter=test1)
         unregister_counter(counter=test2)
 
         unregister_reporter(reporter=v)
-
-
-
 
     def test_perf_time(self):
         c = AverageTimeCounter("c")
@@ -191,7 +192,7 @@ class CounterTests(unittest.TestCase):
         try:
             @time(name="c")
             def f():
-                c.timer._get_current_time() # advances time -> just like sleep 1
+                c.timer._get_current_time()  # advances time -> just like sleep 1
                 pass
 
             f()
@@ -210,7 +211,7 @@ class CounterTests(unittest.TestCase):
                 self.i = self.i + 1
                 return self.i
 
-        c = FakeFrequencyCounter("c",events=["f","c"], window_size=10)
+        c = FakeFrequencyCounter("c", events=["f", "c"], window_size=10)
         register_counter(c)
         try:
             @frequency()
@@ -253,13 +254,12 @@ class CounterTests(unittest.TestCase):
 
     def test_basic_reporter(self):
 
-        test1 = EventCounter("test1",events=["test_event"])
+        test1 = EventCounter("test1", events=["test_event"])
         register_counter(test1)
 
         v = SimpleValueReporter()
         register_reporter(v)
         start_auto_reporting(0.01)
-
 
         try:
             test1.report_event("test_event", "value", 2)
@@ -318,10 +318,10 @@ class CounterTests(unittest.TestCase):
             unregister_counter(counter=c)
 
     def test_average_counter_value(self):
-        a = AverageCounterValue(1,1)
-        b = AverageCounterValue(3,3)
+        a = AverageCounterValue(1, 1)
+        b = AverageCounterValue(3, 3)
         a.merge_with(b)
-        b = AverageCounterValue(None,0)
+        b = AverageCounterValue(None, 0)
         a.merge_with(b)
         self.assertEquals(a.value, 2.5)
 
@@ -357,9 +357,6 @@ class CounterTests(unittest.TestCase):
         a.merge_with(b)
         self.assertEquals(a.value, 4)
 
-
-
-
     def test_json_output(self):
         filename = "/tmp/json_test.txt"
         jsfr = JSONFileReporter(output_file=filename)
@@ -372,7 +369,7 @@ class CounterTests(unittest.TestCase):
 
             output_report()
             report = JSONFileReporter.safe_read(filename)
-            report = dict([(k,v) for k,v in report.iteritems() if not k.startswith("__")])
+            report = dict([(k, v) for k, v in report.iteritems() if not k.startswith("__")])
             self.assertEqual(report, {"test1": 2})
 
             os.unlink(filename)
