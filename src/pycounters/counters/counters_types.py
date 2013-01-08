@@ -1,10 +1,10 @@
 from collections import deque
 from copy import copy
 from time import time
-from pycounters.base import THREAD_DISPATCHER
-from pycounters.counters.base import BaseCounter
-from pycounters.counters.dispatcher import AutoDispatch, TimerMixin, TriggerMixin
-from pycounters.counters.values import AccumulativeCounterValue, AverageCounterValue,\
+from ..base import THREAD_DISPATCHER
+from .base import BaseCounter, BaseWindowCounter
+from .dispatcher import AutoDispatch, TimerMixin, TriggerMixin
+from .values import AccumulativeCounterValue, AverageCounterValue,\
     MinCounterValue, MaxCounterValue
 
 __author__ = 'boaz'
@@ -32,21 +32,11 @@ class TotalCounter(AutoDispatch, BaseCounter):
         self.value = 0L
 
 
-class AverageWindowCounter(AutoDispatch, BaseCounter):
+class AverageWindowCounter(AutoDispatch, BaseWindowCounter):
     """ Calculates a running average of arbitrary values """
 
-    def __init__(self, name, window_size=300.0, events=None):
-        super(AverageWindowCounter, self).__init__(name, events=events)
-        self.window_size = window_size
-        self.values = deque()
-        self.times = deque()
-
-    def _clear(self):
-        self.values.clear()
-        self.times.clear()
-
     def _get_value(self):
-        self._trim_window()
+        super(AverageWindowCounter, self)._get_value()
         if not self.values:
             v = None
         else:
@@ -54,51 +44,30 @@ class AverageWindowCounter(AutoDispatch, BaseCounter):
 
         return AverageCounterValue(v, len(self.values))
 
-    def _trim_window(self):
-        window_limit = self._get_current_time() - self.window_size
-        # trim old data
-        while self.times and self.times[0] < window_limit:
-            self.times.popleft()
-            self.values.popleft()
 
-    def _report_event_value(self, param, value):
-        self._trim_window()
-        self.values.append(value)
-        self.times.append(self._get_current_time())
-
-    def _get_current_time(self):
-        return time()
-
-
-class FrequencyCounter(TriggerMixin, AverageWindowCounter):
+class FrequencyCounter(TriggerMixin, BaseWindowCounter):
     """ Counts the frequency of end events in the last five minutes
     """
 
     def _get_value(self):
-        self._trim_window()
+        super(FrequencyCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
             return AccumulativeCounterValue(0.0)
         return AccumulativeCounterValue(sum(self.values, 0.0) / (self._get_current_time() - self.times[0]))
 
 
-class WindowCounter(TriggerMixin, AverageWindowCounter):
+class WindowCounter(TriggerMixin, BaseWindowCounter):
     """ Counts number of events in window """
     def _get_value(self):
-        self._trim_window()
+        super(WindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
             return AccumulativeCounterValue(0.0)
         return AccumulativeCounterValue(sum(self.values, 0.0))
 
-    def get_oldest_time(self):
-        with self.lock:
-            if not self.times:
-                return None
-            return self.times[0]
 
-
-class MaxWindowCounter(AverageWindowCounter):
+class MaxWindowCounter(BaseWindowCounter):
     def _get_value(self):
-        self._trim_window()
+        super(MaxWindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
             return MaxCounterValue(0.0)
         val = max(self.values)
@@ -107,7 +76,7 @@ class MaxWindowCounter(AverageWindowCounter):
         return MaxCounterValue(float(val))
 
 
-class MinWindowCounter(AverageWindowCounter):
+class MinWindowCounter(BaseWindowCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values or len(self.values) < 1:
@@ -147,7 +116,8 @@ class EventCounter(TriggerMixin, BaseCounter):
 
 
 class ValueAccumulator(AutoDispatch, BaseCounter):
-    """ Captures all named values it gets and accumulates them. Also allows rethrowing them, prefixed with their name."""
+    """ Captures all named values it gets and accumulates them.
+        Also allows rethrowing them, prefixed with their name."""
 
     def __init__(self, name, events=None):
         self.accumulated_values = dict()
