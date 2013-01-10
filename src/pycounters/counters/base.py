@@ -1,3 +1,4 @@
+from collections import deque
 from exceptions import NotImplementedError
 from time import time
 from pycounters.base import BaseListener

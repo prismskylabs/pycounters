@@ -65,7 +65,7 @@ class WindowCounter(TriggerMixin, BaseWindowCounter):
         return AccumulativeCounterValue(sum(self.values, 0.0))
 
 
-class MaxWindowCounter(BaseWindowCounter):
+class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
     def _get_value(self):
         super(MaxWindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
@@ -76,7 +76,7 @@ class MaxWindowCounter(BaseWindowCounter):
         return MaxCounterValue(float(val))
 
 
-class MinWindowCounter(BaseWindowCounter):
+class MinWindowCounter(AutoDispatch, BaseWindowCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values or len(self.values) < 1:
