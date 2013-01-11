@@ -1,6 +1,4 @@
-from collections import deque
 from copy import copy
-from time import time
 from ..base import THREAD_DISPATCHER
 from .base import BaseCounter, BaseWindowCounter
 from .dispatcher import AutoDispatch, TimerMixin, TriggerMixin

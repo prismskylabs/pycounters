@@ -1,7 +1,7 @@
 from collections import deque
 from exceptions import NotImplementedError
 from time import time
-from pycounters.base import BaseListener
+from ..base import BaseListener
 from threading import RLock
 
 
