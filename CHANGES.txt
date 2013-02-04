@@ -1,6 +1,8 @@
 0.6:
     - NEW - CSV Reporter to output selected counters to a csv file
     - Fixed - removing a counter by name caused an exception
+    - NEW - new types of cunters MaxWindowCounter, MinWindowCounter
+    - changes in package structure, counters splited int subfiles
 
 0.5:
     - Fixed - locking issue with JSON output files

@@ -55,7 +55,7 @@ class FrequencyCounter(TriggerMixin, BaseWindowCounter):
 
 
 class WindowCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts number of events in window """
+    """ Counts the total of events values in window """
     def _get_value(self):
         super(WindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
@@ -64,6 +64,7 @@ class WindowCounter(TriggerMixin, BaseWindowCounter):
 
 
 class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
+    """ Counts maximum of events values in window """
     def _get_value(self):
         super(MaxWindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
@@ -75,6 +76,7 @@ class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
 
 
 class MinWindowCounter(AutoDispatch, BaseWindowCounter):
+    """ Counts minimum of events values in window """
     def _get_value(self):
         self._trim_window()
         if not self.values or len(self.values) < 1:

@@ -48,6 +48,18 @@ Counters
     :members:
     :inherited-members:
 
+.. autoclass:: WindowCounter
+    :members:
+    :inherited-members:
+
+.. autoclass:: MaxWindowCounter
+    :members:
+    :inherited-members:
+
+.. autoclass:: MinWindowCounter
+    :members:
+    :inherited-members:
+
 ------------------
 Reporters
 ------------------
@@ -104,7 +116,7 @@ Shortcut functions
 
 .. automodule::  pycounters.shortcuts
     :members:
-    
+
 
 
 

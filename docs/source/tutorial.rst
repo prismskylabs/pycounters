@@ -130,7 +130,7 @@ the reporter will save it's report. Here is an example of the contest of /tmp/se
     {"requests_time": 0.00039249658584594727, "requests_frequency": 0.014266581369872909}
 
 
- 
+
 ----------------------------------------------------------
 Step 3 - Counters and reporting events without a decorator
 ----------------------------------------------------------
@@ -187,6 +187,11 @@ your imports too). However, we will go another way about it.
 PyCounter's event reporting is very light weight. It practically does nothing if no counter is defined to capture those
 events. Because of this, it is a good idea to report all important events through the code and choose later what you
 exactly want analyzed. To do this we must separate event reporting from the definition of counters.
+
+There are two ways of specifing events to which counter is listening. The easiest way sufficient in most of cases is
+creating an counter without passing events parameter during initialization. This way, counter will listen to only one event,
+named exactly as counter name. If you need more control, you can specified a list of events when creating a counter.
+In this situation, counter will listen *only* to events specified on that list.
 
 .. Note::
   This approach also means you can analyze things differently on a single thread, by installing thread specific
@@ -333,9 +338,78 @@ Doing things this way has a couple of advantages:
     * It is more flexible - you can easily analyse more things about your code by simply adding counters.
     * You can decide at runtime what to measure (by changing registered counters)
 
+.. note:: Counter with no events specified in constructor is internally treated as counter listening to event named exactly
+.. note:: as counter name. So do not create 'eventless' counter with name of an event used in some other place.
+
 
 ------------------------
-Step 6 - Utilities
+Step 6 - Another example of using Events and Counters
+------------------------
+
+In this example we will create a few counters listening to the same event. This can allow us to get better insight on this
+event value. Let say, we want to get maximum, minimum, average and sum of values of request data len in 15 minutes window.
+To get this, we need to create 4 counters, all of them to 'requests_data_len' event.
+::
+
+    import SocketServer
+    from pycounters import shortcuts, reporters, register_counter, counters, report_value, register_reporter, start_auto_reporting
+
+    class MyTCPHandler(SocketServer.BaseRequestHandler):
+        """
+        The RequestHandler class for our server.
+
+        It is instantiated once per connection to the server, and must
+        override the handle() method to implement communication to the
+        client.
+        """
+
+        @shortcuts.time("requests_time")
+        @shortcuts.frequency("requests_frequency")
+        def handle(self):
+            # self.request is the TCP socket connected to the client
+            self.data = self.request.recv(1024).strip()
+            print "%s wrote:" % self.client_address[0]
+            print self.data
+
+            # measure the average length of data
+            report_value("requests_data_len",len(self.data))
+
+            # just send back the same data, but upper-cased
+            self.request.send(self.data.upper())
+
+    if __name__ == "__main__":
+        HOST, PORT = "localhost", 9999
+        JSONFile = "/tmp/server.counters.json"
+
+        data_len_avg_counter = counters.AverageWindowCounter("requests_data_len_avg", events=["requests_data_len"], window_size=300) # create the avarage window counter
+        register_counter(data_len_avg_counter) # register it, so it will start processing events
+
+        data_len_total_counter = counters.WindowCounter("requests_data_len_total", events=["requests_data_len"], window_size=300) # create the window sum counter
+        register_counter(data_len_total_counter) # register it, so it will start processing events
+
+        data_len_max_counter = counters.MaxWindowCounter("requests_data_len_max", events=["requests_data_len"], window_size=300) # create the max window counter
+        register_counter(data_len_max_counter) # register it, so it will start processing events
+
+        data_len_min_counter = counters.MinWindowCounter("requests_data_len_min", events=["requests_data_len"], window_size=300) # create the min window counter
+        register_counter(data_len_min_counter)
+
+        reporter = reporters.JSONFileReporter(output_file=JSONFile)
+        register_reporter(reporter)
+
+        start_auto_reporting()
+
+
+        # Create the server, binding to localhost on port 9999
+        server = SocketServer.TCPServer((HOST, PORT), MyTCPHandler)
+
+        # Activate the server; this will keep running until you
+        # interrupt the program with Ctrl-C
+        server.serve_forever()
+
+
+
+------------------------
+Step 7 - Utilities
 ------------------------
 
 In the example so far, we've outputted the collected metrics to a JSON file. Using that JSON file, we can easily build
@@ -406,7 +480,7 @@ Try it out (after the server has run for more than 5 minutes and a report was ou
 running ``python munin_plugin config`` and ``python munin_plugin`` .
 
 -----------------------------
-Step 7 - Multiprocess support
+Step 8 - Multiprocess support
 -----------------------------
 
 Some application (like a web server) do not run in a single process. Still, you want to collect global metrics like the

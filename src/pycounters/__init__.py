@@ -58,7 +58,7 @@ def unregister_counter(counter=None, name=None):
 
 def output_report():
     """
-      Manually cause the current values all registered counters to be reported.
+      Manually cause the current values of all registered counters to be reported.
     """
     reporters.base.GLOBAL_REPORTING_CONTROLLER.report()
 

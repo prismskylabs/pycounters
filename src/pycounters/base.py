@@ -12,7 +12,6 @@ class EventDispatcher(object):
 
     def dispatch_event(self, name, property, param):
         with self.lock:
-
             ## dispatch a all registraar os None
             for l in self.listeners.get(None, []):
                 l.report_event(name, property, param)
