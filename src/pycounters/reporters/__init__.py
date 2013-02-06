@@ -38,8 +38,6 @@ class JSONFileReporter(BaseReporter):
         """
         super(JSONFileReporter, self).__init__()
         self.output_file = output_file
-        ## try to open the file now, just to see if it is possible and raise an exception if not
-        self.output_values({"__initializing__": True})
 
     def output_values(self, counter_values):
         JSONFileReporter.safe_write(counter_values, self.output_file)
