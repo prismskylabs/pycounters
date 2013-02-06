@@ -41,6 +41,8 @@ value events
     will give you the average rate of cache hits.
     Value events can be reported by using the :func:`report_value` function.
 
+.. note:: There is no special way in PyCounters to create new event it is enough, to create a counter listening to that event.
+
 .. _counters:
 
 --------------------
@@ -49,7 +51,8 @@ Counters
 
 All the "smartness" of PyCounters is bundled withing a set of Counters. Counters are in charge of intercepting and interpreting
 events reported by different parts of the program. As mentioned before, you can register a Counter when you want to analyze specific events
-(by default events of identical name). You do so by using the :py:func:`register_counter` function: ::
+(by default events of identical name, if you need more control, use events parameter).
+You do so by using the :py:func:`register_counter` function: ::
 
     counter = AverageWindowCounter("some_name")
     register_counter(counter)
