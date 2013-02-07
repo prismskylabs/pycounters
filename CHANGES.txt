@@ -1,0 +1,34 @@
+0.6:
+    - NEW - CSV Reporter to output selected counters to a csv file
+    - Fixed - removing a counter by name caused an exception
+    - NEW - new types of cunters MaxWindowCounter, MinWindowCounter
+    - changes in package structure, counters splited int subfiles
+
+0.5:
+    - Fixed - locking issue with JSON output files
+    - Fixed - EventCounter did not respond to events keyword argument
+
+0.4:
+    - added a patcher util class to allow injecting events to existing libraries/code.
+    - decoupled counter names from the names of events they count. Still, by default a counter will count events with
+      it's name
+    - shortcut decorators now take the name of the function they wrap as a default event name
+    - Added a role option to multi process reporting initializations.
+    - Made all report_* and shortcuts decorators usable as context managers.
+    - Munin plugin now ignores old reports by default
+    - Counters which doesn't have any value now return None instead of 0.
+    - Fixed an issue with aggregation of average values when not all sources had the same value
+    - Added output_report() to allow manual initiation of reports.
+
+
+0.3:
+    - Added a manifest.in file, so that CHANGES.txt will come along.
+
+0.2:
+    - Added multiprocess support.
+    - Extended EventLogger to allow regex based filtering of events it logs.
+    - Added JSONFileReporter to output reports in JSON format
+    - Added a utility to faciliate writing Munin plugins
+
+0.1:
+    - Initial Release
