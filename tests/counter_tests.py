@@ -214,7 +214,7 @@ class CounterTests(unittest.TestCase):
         c = FakeFrequencyCounter("c", events=["f", "c"], window_size=10)
         register_counter(c)
         try:
-            @frequency()
+            @frequency(auto_add_counter=None)
             def f():
                 pass
 
