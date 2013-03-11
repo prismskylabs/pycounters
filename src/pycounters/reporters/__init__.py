@@ -1,4 +1,4 @@
-import fcntl
+import portalocker
 import json
 import os
 from .base import  BaseReporter
@@ -45,7 +45,7 @@ class JSONFileReporter(BaseReporter):
     @staticmethod
     def _lockfile(file):
         try:
-            fcntl.flock(file, fcntl.LOCK_EX)
+            portalocker.lock(file, portalocker.LOCK_EX)
             return True
         except IOError, exc_value:
         #  IOError: [Errno 11] Resource temporarily unavailable
@@ -56,7 +56,7 @@ class JSONFileReporter(BaseReporter):
 
     @staticmethod
     def _unlockfile(file):
-        fcntl.flock(file, fcntl.LOCK_UN)
+        portalocker.unlock(file)
 
     @staticmethod
     def safe_write(value, filename):
