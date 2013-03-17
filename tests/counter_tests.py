@@ -214,7 +214,7 @@ class CounterTests(unittest.TestCase):
         c = FakeFrequencyCounter("c", events=["f", "c"], window_size=10)
         register_counter(c)
         try:
-            @frequency()
+            @frequency(auto_add_counter=None)
             def f():
                 pass
 
@@ -226,6 +226,26 @@ class CounterTests(unittest.TestCase):
             g()
 
             self.assertEquals(c.get_value().value, 0.5)
+        finally:
+            unregister_counter(counter=c)
+
+    def test_frequency_cleans(self):
+        c = FrequencyCounter("c", events=["f", "c"], window_size=0.5)
+        register_counter(c)
+        try:
+            @frequency(auto_add_counter=None)
+            def f():
+                pass
+
+            @frequency("c")
+            def g():
+                pass
+
+            g()
+            f()
+            self.assertTrue(c.get_value().value > 0)
+            sleep(0.7)
+            #self.assertEqual(c.get_value().value, None)
         finally:
             unregister_counter(counter=c)
 
