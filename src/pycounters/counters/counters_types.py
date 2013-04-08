@@ -44,7 +44,9 @@ class AverageWindowCounter(AutoDispatch, BaseWindowCounter):
 
 
 class FrequencyCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts the frequency of end events in the last five minutes
+    """ Use to count the frequency of some occurrences in a running window. Occurrences can be reported directly
+        via a value event (X occurrences has happened now) or via an end event which will be interpreted as a single
+        occurrence.
     """
 
     def _get_value(self):

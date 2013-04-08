@@ -308,7 +308,7 @@ class CollectingNode(object):
         for host_port_index in range(len(self.hosts_and_ports)):
             cur_host_port = self.hosts_and_ports[host_port_index]
             try:
-                self.debug_log.debug("%s: Trying to connect to a lader on %s.", self.id, cur_host_port)
+                self.debug_log.debug("%s: Trying to connect to a leader on %s.", self.id, cur_host_port)
                 candidate_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 candidate_socket.settimeout(10)
                 candidate_socket.connect(cur_host_port)
