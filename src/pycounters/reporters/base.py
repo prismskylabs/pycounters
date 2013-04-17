@@ -134,7 +134,15 @@ class MultiProcessCounterValueCollector(CounterValuesCollector):
         if status is None:
             self.debug_log.info("New leader is established. Level is %s", new_leader.leading_level)
             with self.lock:
+                current_node_count = self.leader.connected_nodes_count
                 self.leader.reconnect_nodes()
+                for _ in range(30):
+                    new_nodes = new_leader.connected_nodes_count
+                    self.debug_log.debug("%s of %s nodes moved to new leader", new_nodes, current_node_count)
+                    if new_nodes >= current_node_count:
+                        break
+                    time.sleep(1)
+                self.debug_log.debug("closing old leader and moving on")
                 self.leader.stop_leading()
                 self.leader = new_leader
 
