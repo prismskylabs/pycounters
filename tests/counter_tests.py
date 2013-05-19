@@ -9,7 +9,7 @@ from pycounters.base import CounterRegistry, THREAD_DISPATCHER, EventDispatcher
 
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, \
     ValueAccumulator, ThreadTimeCategorizer, TotalCounter, Timer, ThreadLocalTimer, AccumulativeCounterValue, \
-    MinCounterValue, MaxCounterValue, AverageCounterValue
+    MinCounterValue, MaxCounterValue, AverageCounterValue, MinWindowCounter, MaxWindowCounter
 
 from pycounters.reporters import JSONFileReporter
 from pycounters.reporters.base import BaseReporter
@@ -256,6 +256,30 @@ class CounterTests(unittest.TestCase):
         self.assertEquals(test.get_value().value, 1.5)
 
         sleep(0.7)
+        self.assertEquals(test.get_value().value, None)
+
+        test.report_event("test", "value", 1)
+        self.assertEquals(test.get_value().value, 1.0)
+
+    def test_min_window_counter(self):
+        test = MinWindowCounter("test", window_size=0.5)
+        test.report_event("test", "value", 1)
+        test.report_event("test", "value", 2)
+        self.assertEquals(test.get_value().value, 1.0)
+
+        sleep(0.6)
+        self.assertEquals(test.get_value().value, None)
+
+        test.report_event("test", "value", 1)
+        self.assertEquals(test.get_value().value, 1.0)
+
+    def test_max_window_counter(self):
+        test = MaxWindowCounter("test", window_size=0.5)
+        test.report_event("test", "value", 1)
+        test.report_event("test", "value", 2)
+        self.assertEquals(test.get_value().value, 2.0)
+
+        sleep(0.6)
         self.assertEquals(test.get_value().value, None)
 
         test.report_event("test", "value", 1)

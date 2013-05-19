@@ -44,7 +44,7 @@ class AverageWindowCounter(AutoDispatch, BaseWindowCounter):
 
 
 class FrequencyCounter(TriggerMixin, BaseWindowCounter):
-    """ Use to count the frequency of some occurrences in a running window. Occurrences can be reported directly
+    """ Use to count the frequency of some occurrences in a sliding window. Occurrences can be reported directly
         via a value event (X occurrences has happened now) or via an end event which will be interpreted as a single
         occurrence.
     """
@@ -57,7 +57,7 @@ class FrequencyCounter(TriggerMixin, BaseWindowCounter):
 
 
 class WindowCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts the total of events values in window """
+    """ Counts the total of events values in a sliding window """
     def _get_value(self):
         super(WindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:
