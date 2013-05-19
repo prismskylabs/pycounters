@@ -69,11 +69,9 @@ class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
     """ Counts maximum of events values in window """
     def _get_value(self):
         super(MaxWindowCounter, self)._get_value()
-        if not self.values or len(self.values) < 1:
-            return MaxCounterValue(0.0)
+        if not self.values:
+            return MaxCounterValue(None)
         val = max(self.values)
-        if val is None:
-            return MaxCounterValue(0.0)
         return MaxCounterValue(float(val))
 
 
@@ -81,11 +79,9 @@ class MinWindowCounter(AutoDispatch, BaseWindowCounter):
     """ Counts minimum of events values in window """
     def _get_value(self):
         self._trim_window()
-        if not self.values or len(self.values) < 1:
-            return MinCounterValue(0.0)
+        if not self.values:
+            return MinCounterValue(None)
         val = min(self.values)
-        if val is None:
-            return MinCounterValue(0.0)
         return MinCounterValue(float(val))
 
 
