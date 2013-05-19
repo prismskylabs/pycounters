@@ -1,8 +1,8 @@
-from pycounters.counters.timer import ThreadLocalTimer
+from ..utils.timer import ThreadLocalTimer
 
 
 class AutoDispatch(object):
-    """ a mixing to wire up events to functions based on the property parameter. Anything without a match will be
+    """ a mixin to wire up events to functions based on the property parameter. Anything without a match will be
         ignored.
         function signature is:
         def _report_event_PROPERTY(name, param)

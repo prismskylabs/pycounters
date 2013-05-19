@@ -15,7 +15,7 @@ class Timer(object):
             self.accumulated_time = 0.0
 
     def stop(self):
-        """ stops the timer returning accumulated time so far. Also clears out the accumaulated time. """
+        """ stops the timer returning accumulated time so far. Also clears out the accumulated time. """
         t = self.pause()
         self.accumulated_time = 0.0
         return t

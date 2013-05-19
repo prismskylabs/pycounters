@@ -1,8 +1,8 @@
-from pycounters.base import THREAD_DISPATCHER, BaseListener
-from pycounters.counters.timer import Timer
+from .. import base
+from .timer import Timer
 
 
-class ThreadTimeCategorizer(BaseListener):
+class ThreadTimeCategorizer(base.BaseListener):
     """ A class to divide the time spent by thread across multiple categories. Categories are mutually exclusive. """
 
     def __init__(self, name, categories, timer_class=Timer):
@@ -43,7 +43,7 @@ class ThreadTimeCategorizer(BaseListener):
     def raise_value_events(self, clear=False):
         """ raises category total time as value events. """
         for k, v in self.get_times():
-            THREAD_DISPATCHER.dispatch_event(k, "value", v)
+            base.THREAD_DISPATCHER.dispatch_event(k, "value", v)
 
         if clear:
             self.category_timers.clear()

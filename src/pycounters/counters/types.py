@@ -1,7 +1,7 @@
 from copy import copy
 from ..base import THREAD_DISPATCHER
 from .base import BaseCounter, BaseWindowCounter
-from .dispatcher import AutoDispatch, TimerMixin, TriggerMixin
+from .mixins import AutoDispatch, TimerMixin, TriggerMixin
 from .values import AccumulativeCounterValue, AverageCounterValue,\
     MinCounterValue, MaxCounterValue
 

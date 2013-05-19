@@ -8,14 +8,18 @@ from pycounters import register_counter, report_start_end, unregister_counter, r
 from pycounters.base import CounterRegistry, THREAD_DISPATCHER, EventDispatcher
 
 from pycounters.counters import EventCounter, AverageWindowCounter, AverageTimeCounter, FrequencyCounter, \
-    ValueAccumulator, ThreadTimeCategorizer, TotalCounter, Timer, ThreadLocalTimer, AccumulativeCounterValue, \
-    MinCounterValue, MaxCounterValue, AverageCounterValue, MinWindowCounter, MaxWindowCounter
+    ValueAccumulator, ThreadTimeCategorizer, TotalCounter, MinWindowCounter, MaxWindowCounter
+
+
+from pycounters.counters.values import AccumulativeCounterValue, \
+    MinCounterValue, MaxCounterValue, AverageCounterValue
 
 from pycounters.reporters import JSONFileReporter
 from pycounters.reporters.base import BaseReporter
 
 from pycounters.shortcuts import count, value, frequency, time
 from . import EventCatcher
+from pycounters.utils.timer import ThreadLocalTimer, Timer
 
 
 class FakeThreadLocalTimer(ThreadLocalTimer):

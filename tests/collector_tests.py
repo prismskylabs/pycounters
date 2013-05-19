@@ -5,7 +5,8 @@ from time import sleep
 from pycounters import register_counter, register_reporter, report_value, unregister_counter, unregister_reporter, output_report
 
 from pycounters.base import CounterValueCollection
-from pycounters.counters import TotalCounter, AccumulativeCounterValue
+from pycounters.counters import TotalCounter
+from pycounters.counters.values import AccumulativeCounterValue
 from pycounters.reporters.base import CollectingRole, MultiProcessCounterValueCollector
 from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
 from tests.counter_tests import SimpleValueReporter
