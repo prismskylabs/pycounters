@@ -57,7 +57,7 @@ class FrequencyCounter(TriggerMixin, BaseWindowCounter):
 
 
 class WindowCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts the total of events values in a sliding window """
+    """ Counts the number of end events in a sliding window """
     def _get_value(self):
         super(WindowCounter, self)._get_value()
         if not self.values or len(self.values) < 1:

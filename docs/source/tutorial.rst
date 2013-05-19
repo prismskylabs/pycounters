@@ -189,8 +189,9 @@ events. Because of this, it is a good idea to report all important events throug
 exactly want analyzed. To do this we must separate event reporting from the definition of counters.
 
 .. Note::
-    When you create a counter, it will by default listen to one event, *named exactly as counter name*.
-    However, if events parameter is passed to a counter at initialization, counter will listen *only* to events from list.
+    When you create a counter, it will by default listen to one event, *named exactly as the counter's name*.
+    However, if the events parameter is passed to a counter at initialization, it will listen *only* to the specified
+    events.
 
 .. Note::
   This approach also means you can analyze things differently on a single thread, by installing thread specific
@@ -342,9 +343,9 @@ Doing things this way has a couple of advantages:
 Step 6 - Another example of using Events and Counters
 ------------------------
 
-In this example we will create a few counters listening to the same event, to get better insight on
-event value. Let say, we want to get maximum, minimum, average and sum of values of request data length in 15 minutes window.
-To get this, we need to create 4 counters, all of them listening to 'requests_data_len' event.
+In this example we will create a few counters listening to the same events. Let say, we want to get maximum,
+minimum, average and sum of values of request data length in 15 minutes window. To achieve this, we need to
+create 4 counters, all of them listening to 'requests_data_len' event.
 ::
 
     import SocketServer
@@ -407,7 +408,7 @@ To get this, we need to create 4 counters, all of them listening to 'requests_da
         server.serve_forever()
 
 
-You can change size of window by specifing different window_size parameter when creating a counter.
+You can change size of window by specifying different window_size parameter when creating a counter.
 
 ------------------------
 Step 7 - Utilities
