@@ -1,7 +1,7 @@
 0.6:
     - NEW: CSV Reporter to output selected counters to a csv file
     - NEW: new types of cunters MaxWindowCounter, MinWindowCounter
-    - IMPORTANT: changes in package structure, counters splitteded int sub modules. Backward compatible as long as no
+    - IMPORTANT: changes in package structure, counters module split int sub modules. Backward compatible as long as no
       internals were used.
     - Fixed: removing a counter by name caused an exception
 

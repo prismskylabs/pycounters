@@ -304,9 +304,9 @@ Here is the complete code with all the changes so far (also available at the PyC
         # interrupt the program with Ctrl-C
         server.serve_forever()
 
-------------------------
+---------------------------------------
 Step 5 - More about Events and Counters
-------------------------
+---------------------------------------
 
 In the above example, the MyTCPHandler::handle method is decorated with two short functions:
 :meth:`frequency <pycounters.shortcuts.frequency>` and :meth:`time <pycounters.shortcuts.time>`: . This is the easiest way
@@ -339,9 +339,9 @@ Doing things this way has a couple of advantages:
     * You can decide at runtime what to measure (by changing registered counters)
 
 
-------------------------
+-----------------------------------------------------
 Step 6 - Another example of using Events and Counters
-------------------------
+-----------------------------------------------------
 
 In this example we will create a few counters listening to the same events. Let say, we want to get maximum,
 minimum, average and sum of values of request data length in 15 minutes window. To achieve this, we need to
