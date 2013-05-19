@@ -1,9 +1,11 @@
 0.6:
-    - NEW: CSV Reporter to output selected counters to a csv file
     - NEW: new types of cunters MaxWindowCounter, MinWindowCounter
     - IMPORTANT: changes in package structure, counters module split int sub modules. Backward compatible as long as no
       internals were used.
     - Fixed: removing a counter by name caused an exception
+    - Fixed: too short queue on multi process server caused pycounters to fail if used on >~10 processes
+    - Fixed: starting up a new process in a multi-process auto election setup caused JSON reporter to output an empty
+      file (which will then be updated in the next cycle)
 
 0.5:
     - Fixed - locking issue with JSON output files
