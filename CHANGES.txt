@@ -1,5 +1,5 @@
 0.6:
-    - NEW: new types of cunters MaxWindowCounter, MinWindowCounter
+    - NEW: new types of counters MaxWindowCounter, MinWindowCounter
     - IMPORTANT: changes in package structure, counters module split int sub modules. Backward compatible as long as no
       internals were used.
     - Fixed: removing a counter by name caused an exception
