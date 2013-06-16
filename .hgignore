@@ -5,12 +5,15 @@ develop
 develop-eggs
 downloads
 eggs
+dist
+man
 .installed.cfg
 .mr.developer.cfg
 parts
 *.pyc
 src/*.egg-info
 *.swp
+*.orig
 coverage
 .python
 .Python
