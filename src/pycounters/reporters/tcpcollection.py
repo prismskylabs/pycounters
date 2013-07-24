@@ -33,6 +33,8 @@ class ExplicitRequestClosingTCPServer(TCPServer):
     """ A tcp server that doesn't automatically shutdown incoming requests
     """
 
+    request_queue_size = 1000
+
     def process_request(self, request, client_address):
         """Call finish_request.
 
@@ -105,11 +107,15 @@ class CollectingNodeProxy(BaseRequestHandler):
         return self.receive()
 
     def close(self):
-        if not self.wfile.closed:
-            self.wfile.flush()
-        self.wfile.close()
-        self.rfile.close()
-        self.connection.close()
+        try:
+            if not self.wfile.closed:
+                self.wfile.flush()
+            self.wfile.close()
+            self.rfile.close()
+            self.connection.close()
+        except (IOError, EOFError) as e:
+            self.debug_log.debug("Proxy of Node %s: Swallowing io error (we're closing anyway): %s", self.id, e)
+
 
 
 def normalize_hosts_and_ports(hosts_and_ports):
@@ -171,7 +177,7 @@ class CollectingLeader(object):
                         raise
                     return str(e)
 
-        self.debug_log.info("Successfully gained leader ship on %s (level: %s). Start responding to nodes",
+        self.debug_log.info("Successfully gained leadership on %s (level: %s). Start responding to nodes",
             self.hosts_and_ports[self.leading_level], self.leading_level)
 
         def target():
@@ -187,6 +193,11 @@ class CollectingLeader(object):
         t.start()
 
         return None
+
+    @property
+    def connected_nodes_count(self):
+        with self.lock:
+            return len(self.node_proxies)
 
     def disconnect_nodes(self):
         self._send_termination_msg("quit")
@@ -250,7 +261,10 @@ class CollectingLeader(object):
                     ret[node.id] = node.send_and_receive("collect")
                 except IOError as e:
                     self.debug_log.warning("Get an error when sending to node %s:\nerror:%s", node.id, e)
-                    node.close()
+                    try:
+                        node.close()
+                    except:
+                        pass
                     error_nodes.append(node.id)
 
             for err_node in error_nodes:
@@ -302,10 +316,12 @@ class CollectingNode(object):
 
         self.socket = None
 
+        self.debug_log.info("Trying to connect to leader")
+
         for host_port_index in range(len(self.hosts_and_ports)):
             cur_host_port = self.hosts_and_ports[host_port_index]
             try:
-                self.debug_log.debug("%s: Trying to connect to a lader on %s.", self.id, cur_host_port)
+                self.debug_log.debug("%s: Trying to connect to a leader on %s.", self.id, cur_host_port)
                 candidate_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 candidate_socket.settimeout(10)
                 candidate_socket.connect(cur_host_port)
@@ -314,7 +330,7 @@ class CollectingNode(object):
                 break  # success!
 
             except  IOError as e:
-                self.debug_log.warning("%s: Failed to find leader on %s . Error: %s", self.id,
+                self.debug_log.debug("%s: Failed to find leader on %s . Error: %s", self.id,
                     cur_host_port, e)
                 if host_port_index == len(self.hosts_and_ports) - 1:
                     self.socket = None
@@ -334,7 +350,7 @@ class CollectingNode(object):
             self._close_socket()
             raise Exception("Failed to get ack from leader.")
 
-        self.debug_log.debug("%s: Successfully connected to server.", self.id)
+        self.debug_log.info("%s: Successfully connected to server.", self.id)
 
         self.socket.settimeout(None)  # needs to be without a time so recieving thread will block.
 
@@ -419,15 +435,18 @@ class CollectingNode(object):
                 go = False
 
     def _close_socket(self):
-        self.wfile.close()
-        self.rfile.close()
         try:
-            #explicitly shutdown.  socket.close() merely releases
-            #the socket and waits for GC to perform the actual close.
-            self.socket.shutdown(socket.SHUT_WR)
-        except socket.error:
-            pass  # some platforms may raise ENOTCONN here
-        self.socket.close()
+            self.wfile.close()
+            self.rfile.close()
+            try:
+                #explicitly shutdown.  socket.close() merely releases
+                #the socket and waits for GC to perform the actual close.
+                self.socket.shutdown(socket.SHUT_WR)
+            except socket.error:
+                pass  # some platforms may raise ENOTCONN here
+            self.socket.close()
+        except (IOError, EOFError) as e:
+            self.debug_log.debug("Node %s: Swallowing io error (we're closing anyway): %s", self.id, e)
         self.socket = None
 
     def close(self):

@@ -1,7 +1,7 @@
 from copy import copy
 from ..base import THREAD_DISPATCHER
 from .base import BaseCounter, BaseWindowCounter
-from .dispatcher import AutoDispatch, TimerMixin, TriggerMixin
+from .mixins import AutoDispatch, TimerMixin, TriggerMixin
 from .values import AccumulativeCounterValue, AverageCounterValue,\
     MinCounterValue, MaxCounterValue
 
@@ -44,27 +44,25 @@ class AverageWindowCounter(AutoDispatch, BaseWindowCounter):
 
 
 class FrequencyCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts the frequency of end events in the last five minutes
+    """ Use to count the frequency of some occurrences in a sliding window. Occurrences can be reported directly
+        via a value event (X occurrences has happened now) or via an end event which will be interpreted as a single
+        occurrence.
     """
 
     def _get_value(self):
         super(FrequencyCounter, self)._get_value()
-        if not self.values:
-            v = None
-        else:
-            v = sum(self.values, 0.0) / (self._get_current_time() - self.times[0])
-        return AccumulativeCounterValue(v)
+        if not self.values or len(self.values) < 1:
+            return AccumulativeCounterValue(0.0)
+        return AccumulativeCounterValue(sum(self.values, 0.0) / (self._get_current_time() - self.times[0]))
 
 
 class WindowCounter(TriggerMixin, BaseWindowCounter):
-    """ Counts the total of events values in window """
+    """ Counts the number of end events in a sliding window """
     def _get_value(self):
         super(WindowCounter, self)._get_value()
-        if not self.values:
-            v = None
-        else:
-            v = sum(self.values)
-        return AccumulativeCounterValue(v)
+        if not self.values or len(self.values) < 1:
+            return AccumulativeCounterValue(0.0)
+        return AccumulativeCounterValue(sum(self.values, 0.0))
 
 
 class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
@@ -72,10 +70,9 @@ class MaxWindowCounter(AutoDispatch, BaseWindowCounter):
     def _get_value(self):
         super(MaxWindowCounter, self)._get_value()
         if not self.values:
-            v = None
-        else:
-            v = max(self.values)
-        return MaxCounterValue(v)
+            return MaxCounterValue(None)
+        val = max(self.values)
+        return MaxCounterValue(float(val))
 
 
 class MinWindowCounter(AutoDispatch, BaseWindowCounter):
@@ -83,10 +80,9 @@ class MinWindowCounter(AutoDispatch, BaseWindowCounter):
     def _get_value(self):
         self._trim_window()
         if not self.values:
-            v = None
-        else:
-            v = min(self.values)
-        return MinCounterValue(v)
+            return MinCounterValue(None)
+        val = min(self.values)
+        return MinCounterValue(float(val))
 
 
 class AverageTimeCounter(TimerMixin, AverageWindowCounter):

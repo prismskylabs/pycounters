@@ -5,7 +5,8 @@ from time import sleep
 from pycounters import register_counter, register_reporter, report_value, unregister_counter, unregister_reporter, output_report
 
 from pycounters.base import CounterValueCollection
-from pycounters.counters import TotalCounter, AccumulativeCounterValue
+from pycounters.counters import TotalCounter
+from pycounters.counters.values import AccumulativeCounterValue
 from pycounters.reporters.base import CollectingRole, MultiProcessCounterValueCollector
 from pycounters.reporters.tcpcollection import CollectingLeader, CollectingNode, elect_leader
 from tests.counter_tests import SimpleValueReporter
@@ -25,7 +26,7 @@ class CollectorTests(unittest.TestCase):
         report_value("test1", 1)
         report_value("test2", 2)
         output_report()
-        self.assertIn("__collection_time__",v.last_values)
+        self.assertTrue("__collection_time__" in v.last_values)
         self.assertEquals(v.values_wo_metadata,dict(test1=1,test2=2))
 
         unregister_counter(counter=test1)

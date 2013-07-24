@@ -53,7 +53,7 @@ class BaseCounter(BaseListener):
 
 
 class BaseWindowCounter(BaseCounter):
-    """ A base class for counters that aggregate data based on a running window """
+    """ A base class for counters that aggregate data based on a sliding window """
 
     def __init__(self, name, window_size=300.0, events=None):
         super(BaseWindowCounter, self).__init__(name, events=events)
