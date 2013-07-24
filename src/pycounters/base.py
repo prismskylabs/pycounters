@@ -207,5 +207,5 @@ class CounterValueCollection(dict):
                     raise Exception("Can't merge with CounterValueCollection. Other Collection doesn't have a mergeable value for key %s" % (k, ))
                 mv.merge_with(v)
             else:
-                raise Exception("Can't merge with CounterValueCollection. Local key $s doesn't have a mergeable value." % (k, ))
+                raise Exception("Can't merge with CounterValueCollection. Local key %s doesn't have a mergeable value." % (k, ))
 
