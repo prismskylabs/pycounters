@@ -114,7 +114,7 @@ class CollectingNodeProxy(BaseRequestHandler):
             self.rfile.close()
             self.connection.close()
         except (IOError, EOFError) as e:
-            self.debug_log.debug("Proxy of Node %s: Swallowing io error (we're closing anyway): %s", self.id, e)
+            self.debug_log.debug("Proxy of Node %s: Swallowing io error (we're closing anyway): %s", getattr(self, 'id', None), e)
 
 
 
