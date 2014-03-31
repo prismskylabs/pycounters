@@ -327,35 +327,40 @@ class CollectingNode(object):
                 candidate_socket.connect(cur_host_port)
 
                 self.socket = candidate_socket
+                self.rfile = self.socket.makefile('rb', 1)
+                self.wfile = self.socket.makefile('wb', 1)
+
+                if ping_only:
+                    self.debug_log.debug("Sending a ping to server.")
+                    self.send("ping")
+                else:
+                    self.debug_log.debug("%s: Sending id to server.", self.id)
+                    self.send(self.id)
+
+                if self.receive() != "ack":
+                    raise IOError("Failed to get ack from leader.")
+
+                self.debug_log.info("%s: Successfully connected to server on %s.", self.id, cur_host_port)
+
                 break  # success!
 
-            except  IOError as e:
+            except IOError as e:
                 self.debug_log.debug("%s: Failed to find leader on %s . Error: %s", self.id,
                     cur_host_port, e)
+                self._close_socket()
                 if host_port_index == len(self.hosts_and_ports) - 1:
-                    self.socket = None
                     if throw:
                         raise
                     return str(e)
 
-        self.rfile = self.socket.makefile('rb', 1)
-        self.wfile = self.socket.makefile('wb', 1)
-        if ping_only:
-            self.debug_log.debug("Sending a ping to server.")
-            self.send("ping")
-        else:
-            self.debug_log.debug("%s: Sending id to server.", self.id)
-            self.send(self.id)
-        if self.receive() != "ack":
-            self._close_socket()
-            raise Exception("Failed to get ack from leader.")
-
-        self.debug_log.info("%s: Successfully connected to server.", self.id)
+        if not self.socket:
+            return "Could not find any leader!"
 
         self.socket.settimeout(None)  # needs to be without a time so recieving thread will block.
 
         if ping_only:
             self._close_socket()
+
         return None
 
     def connect_to_leader(self, timeout_in_sec=120):
@@ -436,18 +441,26 @@ class CollectingNode(object):
 
     def _close_socket(self):
         try:
-            self.wfile.close()
-            self.rfile.close()
-            try:
-                #explicitly shutdown.  socket.close() merely releases
-                #the socket and waits for GC to perform the actual close.
-                self.socket.shutdown(socket.SHUT_WR)
-            except socket.error:
-                pass  # some platforms may raise ENOTCONN here
-            self.socket.close()
+            if self.wfile:
+                self.wfile.close()
+
+            if self.rfile:
+                self.rfile.close()
+
+            if self.socket:
+                try:
+                    #explicitly shutdown.  socket.close() merely releases
+                    #the socket and waits for GC to perform the actual close.
+                    self.socket.shutdown(socket.SHUT_WR)
+                except socket.error:
+                    pass  # some platforms may raise ENOTCONN here
+                self.socket.close()
         except (IOError, EOFError) as e:
             self.debug_log.debug("Node %s: Swallowing io error (we're closing anyway): %s", self.id, e)
+
         self.socket = None
+        self.rfile = None
+        self.wfile = None
 
     def close(self):
         self.debug_log.info("%s: closing..", self.id)
