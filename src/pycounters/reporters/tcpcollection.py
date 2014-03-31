@@ -87,7 +87,7 @@ class CollectingNodeProxy(BaseRequestHandler):
             self.debug_log.debug("Done handling request from node %s.", node_id)
         except Exception as e:
             st = traceback.format_exc()
-            self.debug_log.exception("Got an exception while dealing with an incoming request: %s, st:", e, st)
+            self.debug_log.exception("Got an exception while dealing with an incoming request: %s, st: %s", e, st)
             self.close()
             raise
 
